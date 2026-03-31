@@ -1,5 +1,5 @@
 # flutter_music_app
-
+flutter clean && flutter pub get && flutter run -d chrome
 A new Flutter project.
 
 ## Getting Started
