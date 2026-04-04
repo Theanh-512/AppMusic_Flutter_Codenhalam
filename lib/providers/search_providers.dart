@@ -117,7 +117,7 @@ final searchResultsProvider = FutureProvider<SearchResults>((ref) async {
 
 final recentSearchesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final authState = ref.watch(authStateProvider);
-  final user = authState.value?.session?.user;
+  final user = authState;
   // pass user?.id which can be null for guest mode
   return ref.watch(searchRepositoryProvider).getRecentSearches(user?.id);
 });

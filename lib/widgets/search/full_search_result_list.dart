@@ -157,7 +157,7 @@ class FullSearchResultList extends ConsumerWidget {
                         subtitle: 'Playlist',
                         imageUrl: p.coverUrl,
                       );
-                      final user = ref.read(authStateProvider).value?.session?.user;
+                      final user = ref.read(authStateProvider);
                       context.pushSafe('/playlist/${p.id}', extra: CollectionItem.fromPlaylist(p, currentUserId: user?.id));
                     },
                   )),
@@ -303,7 +303,7 @@ class FullSearchResultList extends ConsumerWidget {
       imageUrl = item.coverUrl;
       onTap = () {
         onSaveRecent(keyword: title, contentType: 'playlist', contentId: item.id.toString(), title: title, imageUrl: imageUrl);
-        final user = ref.read(authStateProvider).value?.session?.user;
+        final user = ref.read(authStateProvider);
         context.pushSafe('/playlist/${item.id}', extra: CollectionItem.fromPlaylist(item, currentUserId: user?.id));
       };
     }

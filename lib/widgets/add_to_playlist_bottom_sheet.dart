@@ -15,7 +15,7 @@ class AddToPlaylistBottomSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider).value?.session?.user;
+    final user = ref.watch(authStateProvider);
     
     if (user == null) {
       return Container(

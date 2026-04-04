@@ -1,62 +1,53 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/song.dart';
 
 class FavoriteRepository {
-  final SupabaseClient _supabase;
+  final Dio _api;
 
-  FavoriteRepository(this._supabase);
+  FavoriteRepository(this._api);
 
   /// Check if a song is liked by a specific user.
   Future<bool> isSongLiked(String userId, int songId) async {
-    final response = await _supabase
-        .from('favorites')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('song_id', songId)
-        .maybeSingle();
-    return response != null;
+    try {
+      final response = await _api.get('/favorites/check', queryParameters: {
+        'userId': userId,
+        'songId': songId,
+      });
+      return response.data['isLiked'] ?? false;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Toggle like status for a song.
-  /// Calls Supabase RPCs to update like counts in the background.
   Future<void> toggleLike(String userId, int songId, bool isAlreadyLiked) async {
-    if (isAlreadyLiked) {
-      await _supabase.from('favorites').delete().match({
-        'user_id': userId,
-        'song_id': songId,
+    try {
+      await _api.post('/favorites/toggle', data: {
+        'userId': userId,
+        'songId': songId,
       });
-      // Try to decrement count cache via RPC
-      await _supabase.rpc('decrement_song_likes', params: {'song_id_param': songId}).catchError((_) {});
-    } else {
-      await _supabase.from('favorites').insert({
-        'user_id': userId,
-        'song_id': songId,
-      });
-      // Try to increment count cache via RPC
-      await _supabase.rpc('increment_song_likes', params: {'song_id_param': songId}).catchError((_) {});
+    } catch (e) {
+      throw Exception('Lỗi khi thay đổi trạng thái thích: $e');
     }
   }
 
   /// Fetch all songs liked by a user.
   Future<List<Song>> fetchLikedSongs(String userId) async {
-    final response = await _supabase
-        .from('favorites')
-        .select('song_id, songs(*)')
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-
-    return (response as List)
-        .where((row) => row['songs'] != null)
-        .map((row) => Song.fromJson(row['songs'] as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _api.get('/favorites/$userId');
+      return (response.data as List).map((e) => Song.fromJson(e)).toList();
+    } catch (e) {
+      throw Exception('Lỗi khi tải danh sách bài hát đã thích: $e');
+    }
   }
 
   /// Get the total count of liked songs for a user.
   Future<int> getLikedSongsCount(String userId) async {
-    final response = await _supabase
-        .from('favorites')
-        .select('id')
-        .eq('user_id', userId);
-    return (response as List).length;
+    try {
+      final songs = await fetchLikedSongs(userId);
+      return songs.length;
+    } catch (e) {
+      return 0;
+    }
   }
 }

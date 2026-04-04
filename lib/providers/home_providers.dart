@@ -26,6 +26,11 @@ final trendingSongsProvider = FutureProvider<List<Song>>((ref) async {
   return songs.toList()..shuffle();
 });
 
+// ─── Category Songs Provider ──────────────────────────────────────────────────
+final categorySongsProvider = FutureProvider.family<List<Song>, ({String type, String name})>((ref, arg) async {
+  return ref.watch(songRepositoryProvider).fetchSongsByCategory(type: arg.type, name: arg.name);
+});
+
 // ─── System Playlists ─────────────────────────────────────────────────────────
 final systemPlaylistsProvider = FutureProvider<List<Playlist>>((ref) async {
   final playlists = await ref.watch(collectionRepositoryProvider).fetchSystemPlaylists();
@@ -52,7 +57,7 @@ final newAlbumsProvider = FutureProvider<List<Album>>((ref) async {
 
 // ─── Recent Plays ────────────────────────────────────────────────────────────
 final recentPlaysProvider = FutureProvider<List<dynamic>>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return [];
   return ref.watch(playerRepositoryProvider).fetchRecentPlays(user.id);
 });
@@ -63,7 +68,7 @@ final recentPlaysProvider = FutureProvider<List<dynamic>>((ref) async {
 
 // ─── Auth-gated: Followed Artists ────────────────────────────────────────────
 final followedArtistsProvider = FutureProvider<List<Artist>>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return [];
   return ref.watch(followRepositoryProvider).fetchFollowedArtists(user.id);
 });

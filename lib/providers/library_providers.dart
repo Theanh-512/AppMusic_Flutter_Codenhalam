@@ -9,13 +9,13 @@ import 'auth_provider.dart';
 // ─── Liked Songs ──────────────────────────────────────────────────────────────
 
 final likedSongsProvider = FutureProvider<List<Song>>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return [];
   return ref.watch(favoriteRepositoryProvider).fetchLikedSongs(user.id);
 });
 
 final likedSongsCountProvider = FutureProvider<int>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return 0;
   return ref.watch(favoriteRepositoryProvider).getLikedSongsCount(user.id);
 });
@@ -25,7 +25,7 @@ final likedSongsCountProvider = FutureProvider<int>((ref) async {
 class UserPlaylistsNotifier extends AsyncNotifier<List<Playlist>> {
   @override
   Future<List<Playlist>> build() async {
-    final user = ref.watch(authStateProvider).value?.session?.user;
+    final user = ref.watch(authStateProvider);
     if (user == null) return [];
     return ref.watch(playlistRepositoryProvider).fetchUserOwnedPlaylists(user.id);
   }
@@ -44,7 +44,7 @@ final userPlaylistsProvider =
 // ─── Saved (Bookmarked) Playlists ─────────────────────────────────────────────
 
 final savedPlaylistsProvider = FutureProvider<List<Playlist>>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return [];
   return ref.watch(collectionRepositoryProvider).fetchSavedPlaylists(user.id);
 });
@@ -52,7 +52,7 @@ final savedPlaylistsProvider = FutureProvider<List<Playlist>>((ref) async {
 // ─── Followed Artists ─────────────────────────────────────────────────────────
 
 final followedArtistsLibraryProvider = FutureProvider<List<Artist>>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return [];
   return ref.watch(followRepositoryProvider).fetchFollowedArtists(user.id);
 });
@@ -60,7 +60,7 @@ final followedArtistsLibraryProvider = FutureProvider<List<Artist>>((ref) async 
 // ─── Subscribed Podcast Channels ─────────────────────────────────────────────
 
 final subscribedChannelsLibraryProvider = FutureProvider<List<PodcastChannel>>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return [];
   return ref.watch(podcastRepositoryProvider).fetchSubscribedChannels(user.id);
 });

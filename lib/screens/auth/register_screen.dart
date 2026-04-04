@@ -6,6 +6,7 @@ import '../../providers/supabase_provider.dart';
 import '../../core/app_theme.dart';
 import '../../core/app_ui_utils.dart';
 import '../../widgets/state_widgets.dart';
+import '../../providers/auth_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -58,6 +59,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     try {
       await ref.read(authRepositoryProvider).signUpWithEmail(email, password, name);
       if (mounted) {
+        final profile = await ref.read(authRepositoryProvider).getProfile();
+        ref.read(authStateProvider.notifier).setProfile(profile);
         context.showSuccess('Đăng ký thành công!');
         context.go('/'); 
       }

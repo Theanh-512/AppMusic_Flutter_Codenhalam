@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/supabase_provider.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/state_widgets.dart';
+import '../../providers/auth_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -42,6 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authRepositoryProvider).signInWithEmail(email, password);
       if (mounted) {
+        final profile = await ref.read(authRepositoryProvider).getProfile();
+        ref.read(authStateProvider.notifier).setProfile(profile);
         // Go to home after login
         context.go('/');
       }

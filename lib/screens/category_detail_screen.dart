@@ -1,67 +1,139 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../core/app_theme.dart';
+import '../providers/home_providers.dart';
+import '../core/player_utils.dart';
 
-class CategoryDetailScreen extends StatelessWidget {
+class CategoryDetailScreen extends ConsumerWidget {
   final String title;
   final String type; // genre, mood, hashtag
 
   const CategoryDetailScreen({super.key, required this.title, required this.type});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final songsAsync = ref.watch(categorySongsProvider((type: type, name: title)));
+
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          type.toUpperCase() == 'HASHTAG' ? '#$title' : title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              type == 'hashtag' ? LucideIcons.hash : LucideIcons.music4,
-              size: 80,
-              color: Colors.white24,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Đang phát triển',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                'Nội dung cho chuyên mục "$title" sẽ sớm được cập nhật trong các phiên bản sau.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: AppTheme.background,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(LucideIcons.chevronLeft, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              ),
-              child: const Text('Quay lại khoá tìm kiếm'),
             ),
-          ],
-        ),
+            expandedHeight: 200,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: Text(
+                type.toUpperCase() == 'HASHTAG' ? '#$title' : title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.white),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppTheme.primary.withOpacity(0.8),
+                      AppTheme.background,
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    type == 'hashtag' ? LucideIcons.hash : LucideIcons.layers,
+                    size: 80,
+                    color: Colors.white24,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          songsAsync.when(
+            data: (songs) {
+              if (songs.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.music, size: 64, color: Colors.white24),
+                        SizedBox(height: 16),
+                        Text(
+                          'Chưa có bài hát nào cho chuyên mục này',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.only(top: 8, bottom: 100),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final song = songs[index];
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        leading: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: Colors.white10,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: song.coverUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: song.coverUrl!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(color: Colors.white12),
+                                  errorWidget: (_, __, ___) => const Icon(LucideIcons.music, color: Colors.white54),
+                                )
+                              : const Icon(LucideIcons.music, color: Colors.white54),
+                        ),
+                        title: Text(
+                          song.title,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          song.artistName ?? 'Nghệ sĩ ẩn danh',
+                          style: const TextStyle(color: Colors.white54),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () {
+                          // Play the category playlist
+                          context.playOrNavigate(ref, song, songs, initialIndex: index);
+                        },
+                      );
+                    },
+                    childCount: songs.length,
+                  ),
+                ),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => SliverFillRemaining(
+              child: Center(
+                child: Text('Lỗi tải dữ liệu: $err', style: const TextStyle(color: Colors.red)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

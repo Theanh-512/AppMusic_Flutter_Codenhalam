@@ -58,7 +58,7 @@ class _CreatePlaylistScreenState extends ConsumerState<CreatePlaylistScreen> {
   }
 
   Future<void> _onSave() async {
-    final user = ref.read(authStateProvider).value?.session?.user;
+    final user = ref.read(authStateProvider);
     if (user == null) {
       context.push('/login');
       return;

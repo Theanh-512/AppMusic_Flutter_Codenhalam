@@ -1,56 +1,43 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/artist.dart';
 
 class FollowRepository {
-  final SupabaseClient _supabase;
+  final Dio _api;
 
-  FollowRepository(this._supabase);
+  FollowRepository(this._api);
 
   /// Check if an artist is followed by a user.
   Future<bool> isArtistFollowed(String userId, String artistId) async {
-    final response = await _supabase
-        .from('user_followed_artists')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('artist_id', artistId)
-        .maybeSingle();
-        
-    return response != null;
+    try {
+      final response = await _api.get('/follows/check', queryParameters: {
+        'userId': userId,
+        'artistId': artistId,
+      });
+      return response.data['isFollowed'] ?? false;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Toggle following status for an artist.
-  /// Calls Supabase RPCs to update follower counts in the background.
   Future<void> toggleFollow(String userId, String artistId, bool isAlreadyFollowing) async {
-    if (isAlreadyFollowing) {
-      await _supabase
-          .from('user_followed_artists')
-          .delete()
-          .match({'user_id': userId, 'artist_id': artistId});
-          
-      // Try to decrement count cache via RPC
-      await _supabase.rpc('decrement_artist_followers', params: {'artist_id_param': artistId}).catchError((_) {});
-    } else {
-      await _supabase.from('user_followed_artists').insert({
-        'user_id': userId,
-        'artist_id': artistId,
+    try {
+      await _api.post('/follows/toggle', data: {
+        'userId': userId,
+        'artistId': artistId,
       });
-      
-      // Try to increment count cache via RPC
-      await _supabase.rpc('increment_artist_followers', params: {'artist_id_param': artistId}).catchError((_) {});
+    } catch (e) {
+      throw Exception('Lỗi khi thay đổi trạng thái theo dõi: $e');
     }
   }
 
   /// Fetch all artists followed by a user.
   Future<List<Artist>> fetchFollowedArtists(String userId) async {
-    final response = await _supabase
-        .from('user_followed_artists')
-        .select('artist_id, artists(*)')
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-
-    return (response as List)
-        .where((row) => row['artists'] != null)
-        .map((row) => Artist.fromJson(row['artists'] as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _api.get('/follows/user/$userId/artists');
+      return (response.data as List).map((e) => Artist.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 }

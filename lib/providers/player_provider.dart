@@ -91,7 +91,7 @@ final shuffleModeEnabledProvider = StreamProvider<bool>((ref) {
 // ─── Supabase Sync Logic ──────────────────────────────────────────────────────
 
 final playerSyncProvider = Provider.autoDispose<void>((ref) {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return;
 
   final handler = ref.watch(audioHandlerProvider);

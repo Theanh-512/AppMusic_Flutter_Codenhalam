@@ -63,7 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ── Navigate to detail screens ───────────────────────────────────────────────
   void _openPlaylist(Playlist playlist) {
-    final u = ref.read(authStateProvider).value?.session?.user;
+    final u = ref.read(authStateProvider);
     context.pushSafe('/playlist/${playlist.id}', extra: CollectionItem.fromPlaylist(playlist, currentUserId: u?.id));
   }
 
@@ -344,7 +344,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   //  "ÂM NHẠC - ĐANG THEO DÕI" view (Slivers)
   // ─────────────────────────────────────────────────────────────────────────────
   List<Widget> _buildMusicFollowingSlivers() {
-    final user = ref.watch(authStateProvider).value?.session?.user;
+    final user = ref.watch(authStateProvider);
     if (user == null) return [SliverToBoxAdapter(child: _buildLoginPrompt('theo dõi nghệ sĩ'))];
 
     final followedAsync = ref.watch(followedArtistsProvider);
@@ -388,7 +388,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   //  "PODCASTS - ĐANG THEO DÕI" view (Slivers)
   // ─────────────────────────────────────────────────────────────────────────────
   List<Widget> _buildPodcastsFollowingSlivers() {
-    final user = ref.watch(authStateProvider).value?.session?.user;
+    final user = ref.watch(authStateProvider);
     if (user == null) return [SliverToBoxAdapter(child: _buildLoginPrompt('theo dõi podcast'))];
 
     final channelsAsync = ref.watch(subscribedChannelsProvider);
@@ -441,7 +441,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
 
   List<Widget> _buildRecentSection() {
-    final user = ref.watch(authStateProvider).value?.session?.user;
+    final user = ref.watch(authStateProvider);
     if (user == null) return const []; // Don't show if not logged in
 
     final recentPlaysAsync = ref.watch(recentPlaysProvider);

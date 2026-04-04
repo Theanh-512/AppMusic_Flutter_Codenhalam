@@ -21,7 +21,7 @@ final artistAlbumsProvider = FutureProvider.family<List<Album>, String>((ref, id
 });
 
 final artistFollowStatusProvider = FutureProvider.family<bool, String>((ref, id) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return false;
   return ref.watch(followRepositoryProvider).isArtistFollowed(user.id, id);
 });
@@ -33,7 +33,7 @@ class ArtistFollowNotifier extends Notifier<void> {
   Future<void> toggleFollow(BuildContext context, String artistId, bool currentStatus) async {
     if (!GuestGuard.ensureAuthenticated(context, ref, message: 'Vui lòng đăng nhập để theo dõi nghệ sĩ.')) return;
 
-    final user = ref.read(authStateProvider).value?.session?.user;
+    final user = ref.read(authStateProvider);
     if (user == null) return;
     
     // Toggle follow status

@@ -1,81 +1,83 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/song.dart';
 
 class SongRepository {
-  final SupabaseClient _supabase;
+  final Dio _api;
 
-  SongRepository(this._supabase);
+  SongRepository(this._api);
 
   /// Fetch songs for the "Trending" section, ordered by like count.
   Future<List<Song>> fetchTrendingSongs({int limit = 50}) async {
-    final response = await _supabase
-        .from('songs')
-        .select()
-        .eq('is_active', true)
-        .order('like_count_cache', ascending: false)
-        .limit(limit);
+    try {
+      final response = await _api.get('/songs/trending', queryParameters: {
+        'limit': limit,
+      });
 
-    return (response as List).map((e) => Song.fromJson(e)).toList();
+      return (response.data as List).map((e) => Song.fromJson(e)).toList();
+    } catch (e) {
+      throw Exception('Lỗi khi tải bài hát nổi bật: $e');
+    }
   }
 
   /// Fetch all songs for a general picker, with optional search query.
   Future<List<Song>> fetchAllSongs({String? query, int limit = 100}) async {
-    var q = _supabase
-        .from('songs')
-        .select()
-        .eq('is_active', true);
+    try {
+      final response = await _api.get('/songs', queryParameters: {
+        'query': query,
+        'limit': limit,
+      });
 
-    if (query != null && query.isNotEmpty) {
-      q = q.or('title.ilike.%$query%,artist.ilike.%$query%');
+      return (response.data as List).map((e) => Song.fromJson(e)).toList();
+    } catch (e) {
+      throw Exception('Lỗi khi tải bài hát: $e');
     }
-
-    final response = await q
-        .order('like_count_cache', ascending: false)
-        .limit(limit);
-
-    return (response as List).map((e) => Song.fromJson(e)).toList();
   }
 
   /// Get a single song by its ID.
   Future<Song?> getSongById(int songId) async {
-    final response = await _supabase
-        .from('songs')
-        .select()
-        .eq('id', songId)
-        .maybeSingle();
-    
-    if (response == null) return null;
-    return Song.fromJson(response);
+    try {
+      final response = await _api.get('/songs/$songId');
+      return Song.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Fetch all songs associated with an artist.
   Future<List<Song>> fetchSongsByArtist(String artistId, {int limit = 20}) async {
-    final response = await _supabase
-        .from('songs')
-        .select()
-        .eq('artist_id', artistId)
-        .eq('is_active', true)
-        .limit(limit);
+    try {
+        final response = await _api.get('/songs/artist/$artistId', queryParameters: {
+          'limit': limit,
+        });
 
-    return (response as List).map((e) => Song.fromJson(e)).toList();
+        return (response.data as List).map((e) => Song.fromJson(e)).toList();
+    } catch (e) {
+       throw Exception('Lỗi tải bài hát của nghệ sĩ: $e');
+    }
   }
 
   /// Get a single random song from the database.
   Future<Song?> fetchRandomSong() async {
-    // In Supabase without a custom RPC, we can fetch a few recent/trending
-    // and pick one randomly, or we can use a simpler approach. 
-    // Here we fetch up to 50 active songs randomly by using a workaround or just taking latest.
-    // For a true "random array", we shuffle the list in memory.
-    final response = await _supabase
-        .from('songs')
-        .select()
-        .eq('is_active', true)
-        .limit(50);
-        
-    final list = (response as List).map((e) => Song.fromJson(e)).toList();
-    if (list.isEmpty) return null;
-    
-    list.shuffle();
-    return list.first;
+    try {
+      final response = await _api.get('/songs/random');
+      return Song.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// New: Fetch songs by a specific genre, mood, or hashtag.
+  Future<List<Song>> fetchSongsByCategory({required String type, required String name, int limit = 50}) async {
+    try {
+      final response = await _api.get('/songs/category', queryParameters: {
+        'type': type,
+        'name': name,
+        'limit': limit,
+      });
+
+      return (response.data as List).map((e) => Song.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 }

@@ -12,7 +12,7 @@ class UserAvatar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
-    final user = authState.value?.session?.user;
+    final user = authState;
     final profile = ref.watch(profileProvider).value;
 
     return GestureDetector(

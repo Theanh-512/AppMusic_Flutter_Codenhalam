@@ -1,72 +1,56 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/profile.dart';
 
 class AuthRepository {
-  final SupabaseClient _supabase;
+  final Dio _api;
+  Profile? _cachedProfile;
 
-  AuthRepository(this._supabase);
+  AuthRepository(this._api);
 
-  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
-  User? get currentUser => _supabase.auth.currentUser;
+  // We'll manage current user locally since we're using simple API auth
+  Profile? get currentUser => _cachedProfile;
 
   Future<void> signInWithEmail(String email, String password) async {
-    await _supabase.auth.signInWithPassword(email: email, password: password);
+    try {
+      final response = await _api.post('/auth/login', data: {
+        'email': email,
+        'password': password,
+      });
+      _cachedProfile = Profile.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException && e.response?.statusCode == 401) {
+        throw Exception('Email hoặc mật khẩu không đúng');
+      }
+      throw Exception('Lỗi khi đăng nhập: $e');
+    }
   }
 
   Future<void> signUpWithEmail(String email, String password, String displayName) async {
-    final res = await _supabase.auth.signUp(email: email, password: password);
-    if (res.user != null) {
-      // Create profile row or update default generated one if managed by trigger
-      final avatarUrl = _generateAvatarUrl(displayName);
-      await _supabase.from('profiles').upsert({
-        'id': res.user!.id,
+    try {
+      final response = await _api.post('/auth/register', data: {
         'email': email,
-        'display_name': displayName,
-        'avatar_url': avatarUrl,
+        'password': password,
+        'displayName': displayName,
       });
+      _cachedProfile = Profile.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException && e.response?.statusCode == 400) {
+        throw Exception('Email đã được đăng ký');
+      }
+      throw Exception('Lỗi khi đăng ký: $e');
     }
-  }
-
-  String _generateAvatarUrl(String name) {
-    if (name.isEmpty) name = 'User';
-    final firstChar = name[0].toUpperCase();
-    return 'https://ui-avatars.com/api/?name=$firstChar&background=random&color=fff';
   }
 
   Future<void> signOut() async {
-    await _supabase.auth.signOut();
-  }
-
-  Future<void> sendPasswordResetOTP(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
-  }
-
-  Future<void> verifyOTP(String email, String otp) async {
-    await _supabase.auth.verifyOTP(
-      type: OtpType.recovery,
-      token: otp,
-      email: email,
-    );
-  }
-
-  Future<void> updatePassword(String newPassword) async {
-    await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+    _cachedProfile = null;
   }
 
   Future<Profile?> getProfile() async {
-    final user = currentUser;
-    if (user == null) return null;
-
-    try {
-      final data = await _supabase
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
-      return Profile.fromJson(data);
-    } catch (e) {
-      // Profile might not exist yet
-      return null;
-    }
+    return _cachedProfile;
   }
+
+  // OTP and other advanced auth features may need implementation on backend
+  Future<void> sendPasswordResetOTP(String email) async => throw UnimplementedError();
+  Future<void> verifyOTP(String email, String otp) async => throw UnimplementedError();
+  Future<void> updatePassword(String newPassword) async => throw UnimplementedError();
 }

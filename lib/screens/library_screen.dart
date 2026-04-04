@@ -28,7 +28,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final user = authState.value?.session?.user;
+    final user = authState;
     final filter = ref.watch(libraryFilterProvider);
 
     return Material(
@@ -360,7 +360,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ),
       trailing: const Icon(LucideIcons.chevronRight, color: AppTheme.textSecondary, size: 18),
       onTap: () {
-        final u = ref.read(authStateProvider).value?.session?.user;
+        final u = ref.read(authStateProvider);
         context.push('/playlist/${playlist.id}', extra: CollectionItem.fromPlaylist(playlist, currentUserId: u?.id));
       },
     );

@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../core/app_theme.dart';
 import '../providers/search_providers.dart';
 import '../providers/auth_provider.dart';
-import '../providers/supabase_provider.dart'; // Add this line
+import '../providers/supabase_provider.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/user_drawer.dart';
-import '../widgets/search_widgets.dart';
 
 // Import new modular UI widgets
 import '../widgets/search/search_bar_widget.dart';
 import '../widgets/search/recent_search_section.dart';
 import '../widgets/search/browse_categories_section.dart';
 import '../widgets/search/trending_section.dart';
-import '../widgets/search/search_state_widgets.dart';
 import '../widgets/search/live_suggestion_list.dart';
 import '../widgets/search/full_search_result_list.dart';
 
@@ -91,7 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     String? subtitle,
     String? imageUrl,
   }) async {
-    final user = ref.read(authStateProvider).value?.session?.user;
+    final user = ref.read(authStateProvider);
     await ref.read(searchRepositoryProvider).saveSearchItem(
       userId: user?.id,
       keyword: keyword,
@@ -111,7 +107,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black, // Dark theme as requested
-      drawer: UserDrawer(),
+      drawer: const UserDrawer(),
       body: CustomScrollView(
         slivers: [
           // ─── Header: Avatar + Title ──────────────────────────────────────
@@ -216,7 +212,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         RecentSearchSection(
           recentSearches: recent,
           onClearHistory: () async {
-            final user = ref.read(authStateProvider).value?.session?.user;
+            final user = ref.read(authStateProvider);
             await ref.read(searchRepositoryProvider).clearRecentSearches(user?.id);
             ref.invalidate(recentSearchesProvider);
           },
@@ -261,7 +257,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             }
           },
           onDeleteItem: (item) async {
-            final user = ref.read(authStateProvider).value?.session?.user;
+            final user = ref.read(authStateProvider);
             await ref.read(searchRepositoryProvider).removeSearchItem(
               userId: user?.id,
               contentType: item['content_type'],
@@ -308,6 +304,4 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ]),
     );
   }
-
-  // Method removed.
 }

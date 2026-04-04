@@ -1,19 +1,19 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/song.dart';
 import '../models/podcast.dart';
 
 class PlayerRepository {
-  final SupabaseClient _supabase;
+  final Dio _api;
 
-  PlayerRepository(this._supabase);
+  PlayerRepository(this._api);
 
   Future<Map<String, dynamic>?> fetchPlayerState(String userId) async {
-    final response = await _supabase
-        .from('player_states')
-        .select()
-        .eq('user_id', userId)
-        .maybeSingle();
-    return response;
+    try {
+      final response = await _api.get('/player/state/$userId');
+      return response.data;
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> updatePlayerState({
@@ -24,15 +24,18 @@ class PlayerRepository {
     required String repeatMode,
     required bool shuffleEnabled,
   }) async {
-    await _supabase.from('player_states').upsert({
-      'user_id': userId,
-      'current_song_id': currentSongId,
-      'current_playlist_id': currentPlaylistId,
-      'position_seconds': positionSeconds,
-      'repeat_mode': repeatMode,
-      'shuffle_enabled': shuffleEnabled,
-      'updated_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _api.post('/player/state', data: {
+        'userId': userId,
+        'currentSongId': currentSongId,
+        'currentPlaylistId': currentPlaylistId,
+        'positionSeconds': positionSeconds,
+        'repeatMode': repeatMode,
+        'shuffleEnabled': shuffleEnabled,
+      });
+    } catch (e) {
+      // Ignored
+    }
   }
 
   Future<void> logListen({
@@ -40,42 +43,31 @@ class PlayerRepository {
     String? songId,
     String? podcastId,
   }) async {
-    await _supabase.from('listens').insert({
-      'user_id': userId,
-      'song_id': songId,
-      'podcast_id': podcastId,
-      'listened_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _api.post('/player/listen', data: {
+        'userId': userId,
+        'songId': songId,
+        'podcastId': podcastId,
+      });
+    } catch (e) {
+      // Ignored
+    }
   }
 
   Future<List<dynamic>> fetchRecentPlays(String userId) async {
-    final response = await _supabase
-        .from('listens')
-        .select('song_id, podcast_id, listened_at, songs(*), podcasts(*)')
-        .eq('user_id', userId)
-        .order('listened_at', ascending: false)
-        .limit(30);
-
-    final List<dynamic> result = [];
-    final Set<String> seenIds = {};
-
-    for (var row in response as List) {
-      if (row['song_id'] != null && row['songs'] != null) {
-        final songId = 'song_${row['song_id']}';
-        if (!seenIds.contains(songId)) {
-          seenIds.add(songId);
-          result.add(Song.fromJson(row['songs'] as Map<String, dynamic>));
+    try {
+      final response = await _api.get('/player/recent/$userId');
+      final List<dynamic> data = response.data;
+      
+      return data.map((item) {
+        if (item['type'] == 'song') {
+          return Song.fromJson(item['data']);
+        } else {
+          return Podcast.fromJson(item['data']);
         }
-      } else if (row['podcast_id'] != null && row['podcasts'] != null) {
-        final podcastId = 'podcast_${row['podcast_id']}';
-        if (!seenIds.contains(podcastId)) {
-          seenIds.add(podcastId);
-          result.add(Podcast.fromJson(row['podcasts'] as Map<String, dynamic>));
-        }
-      }
-      if (result.length >= 6) break;
+      }).toList();
+    } catch (e) {
+      return [];
     }
-
-    return result;
   }
 }

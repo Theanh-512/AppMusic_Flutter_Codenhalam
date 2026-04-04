@@ -1,20 +1,19 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/playlist.dart';
 
 class PlaylistRepository {
-  final SupabaseClient _supabase;
+  final Dio _api;
 
-  PlaylistRepository(this._supabase);
+  PlaylistRepository(this._api);
 
   /// Fetch all playlists owned by a user.
   Future<List<Playlist>> fetchUserOwnedPlaylists(String userId) async {
-    final response = await _supabase
-        .from('playlists')
-        .select()
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-        
-    return (response as List).map((e) => Playlist.fromJson(e)).toList();
+    try {
+      final response = await _api.get('/playlists/user/$userId');
+      return (response.data as List).map((e) => Playlist.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   /// Create a new playlist.
@@ -25,73 +24,57 @@ class PlaylistRepository {
     List<int> songIds = const [],
     String? coverUrl,
   }) async {
-    // 1. Insert the playlist
-    final response = await _supabase.from('playlists').insert({
-      'user_id': userId,
-      'name': name,
-      if (description != null && description.isNotEmpty) 'description': description,
-      if (coverUrl != null && coverUrl.isNotEmpty) 'cover_url': coverUrl,
-      'playlist_type': 'user',
-      'is_public': false,
-    }).select().single();
-
-    final playlist = Playlist.fromJson(response);
-
-    // 2. Insert playlist_songs if any
-    if (songIds.isNotEmpty) {
-      await addSongsToPlaylist(playlist.id, songIds);
+    try {
+      final response = await _api.post('/playlists', data: {
+        'userId': userId,
+        'name': name,
+        'description': description,
+        'coverUrl': coverUrl,
+        'songIds': songIds,
+      });
+      return Playlist.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Lỗi khi tạo danh sách phát: $e');
     }
-
-    return playlist;
   }
 
-  /// Add songs to a playlist with sequential positions.
+  /// Add songs to a playlist.
   Future<void> addSongsToPlaylist(int playlistId, List<int> songIds) async {
-    if (songIds.isEmpty) return;
-
-    // Get current max position
-    final existing = await _supabase
-        .from('playlist_songs')
-        .select('position')
-        .eq('playlist_id', playlistId)
-        .order('position', ascending: false)
-        .limit(1);
-
-    int nextPosition = 1;
-    if ((existing as List).isNotEmpty) {
-      nextPosition = (existing.first['position'] as int) + 1;
+    try {
+      await _api.post('/playlists/$playlistId/songs', data: {
+        'songIds': songIds,
+      });
+    } catch (e) {
+      throw Exception('Lỗi khi thêm bài hát vào danh sách phát: $e');
     }
-
-    final rows = songIds.asMap().entries.map((entry) => {
-      'playlist_id': playlistId,
-      'song_id': entry.value,
-      'position': nextPosition + entry.key,
-    }).toList();
-
-    await _supabase.from('playlist_songs').upsert(
-      rows,
-      onConflict: 'playlist_id,song_id',
-    );
   }
 
   /// Remove a song from a playlist.
   Future<void> removeSongFromPlaylist(int playlistId, int songId) async {
-    await _supabase
-        .from('playlist_songs')
-        .delete()
-        .match({'playlist_id': playlistId, 'song_id': songId});
+    try {
+      await _api.delete('/playlists/$playlistId/songs/$songId');
+    } catch (e) {
+      throw Exception('Lỗi khi xóa bài hát khỏi danh sách phát: $e');
+    }
   }
 
   /// Delete a playlist.
   Future<void> deletePlaylist(int playlistId) async {
-    await _supabase.from('playlists').delete().eq('id', playlistId);
+    try {
+      await _api.delete('/playlists/$playlistId');
+    } catch (e) {
+      throw Exception('Lỗi khi xóa danh sách phát: $e');
+    }
   }
 
   /// Rename a playlist.
   Future<void> renamePlaylist(int playlistId, String newName) async {
-    await _supabase
-        .from('playlists')
-        .update({'name': newName})
-        .eq('id', playlistId);
+    try {
+      await _api.put('/playlists/$playlistId', data: {
+        'name': newName,
+      });
+    } catch (e) {
+      throw Exception('Lỗi khi đổi tên danh sách phát: $e');
+    }
   }
 }

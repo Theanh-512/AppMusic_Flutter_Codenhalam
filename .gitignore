@@ -43,3 +43,25 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# .NET / C#
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.sln.docstates
+.vs/
+.vscode/
+Backend/bin/
+Backend/obj/
+backend/bin/
+backend/obj/
+*.exe
+*.dll
+*.pdb
+*.json.txt
+schema_utf8.json
+backend/schema_utf8.json
+Backend/schema_utf8.json
+Backend/.vs/
+backend/.vs/

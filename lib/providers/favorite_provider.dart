@@ -6,7 +6,7 @@ import '../providers/library_providers.dart';
 import '../core/guest_guard.dart';
 
 final isLikedProvider = FutureProvider.family<bool, int>((ref, songId) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  final user = ref.watch(authStateProvider);
   if (user == null) return false;
   return ref.watch(favoriteRepositoryProvider).isSongLiked(user.id, songId);
 });
@@ -18,7 +18,7 @@ class FavoriteNotifier extends Notifier<void> {
   Future<void> toggleLike(BuildContext context, int songId, bool currentStatus) async {
     if (!GuestGuard.ensureAuthenticated(context, ref)) return;
 
-    final user = ref.read(authStateProvider).value?.session?.user;
+    final user = ref.read(authStateProvider);
     if (user == null) return;
 
     await ref.read(favoriteRepositoryProvider).toggleLike(user.id, songId, currentStatus);

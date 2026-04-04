@@ -7,7 +7,7 @@ import '../core/app_ui_utils.dart';
 class GuestGuard {
   /// Works from both ConsumerWidget (WidgetRef) and Notifier (Ref).
   static bool ensureAuthenticated(BuildContext context, dynamic ref, {String? message}) {
-    final user = ref.read(authStateProvider).value?.session?.user;
+    final user = ref.read(authStateProvider);
 
     if (user == null) {
       context.showInfo(

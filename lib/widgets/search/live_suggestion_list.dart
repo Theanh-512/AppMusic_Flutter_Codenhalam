@@ -164,7 +164,7 @@ class LiveSuggestionList extends ConsumerWidget {
                   subtitle: 'Playlist',
                   imageUrl: p.coverUrl,
                 );
-                final user = ref.read(authStateProvider).value?.session?.user;
+                final user = ref.read(authStateProvider);
                 context.pushSafe('/playlist/${p.id}', extra: CollectionItem.fromPlaylist(p, currentUserId: user?.id));
               },
             ),
