@@ -19,5 +19,17 @@ namespace MusicBackend.Models
 
         [Column("bio")]
         public string? Bio { get; set; }
+
+        [Column("verified")]
+        public bool Verified { get; set; } = false;
+
+        [Column("followers_count_cache")]
+        public int? FollowersCount { get; set; }
+
+        [Column("songs_count_cache")]
+        public int? SongsCount { get; set; }
+
+        [Column("cover_url")]
+        public string? CoverUrl { get; set; }
     }
 }

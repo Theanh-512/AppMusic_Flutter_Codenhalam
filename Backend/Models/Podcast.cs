@@ -26,6 +26,9 @@ namespace MusicBackend.Models
         [Column("duration_seconds")]
         public int DurationSeconds { get; set; }
 
+        [Column("listen_count")]
+        public int ListenCount { get; set; } = 0;
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

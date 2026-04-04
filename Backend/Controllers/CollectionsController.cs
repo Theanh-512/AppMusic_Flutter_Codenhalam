@@ -37,35 +37,82 @@ namespace MusicBackend.Controllers
         }
 
         [HttpGet("playlists/{playlistId}/songs")]
-        public IActionResult GetPlaylistSongs(int playlistId)
+        public async Task<IActionResult> GetPlaylistSongs(int playlistId)
         {
-            // Stub implementation
-            return Ok(new List<Song>());
+            var songs = await _context.PlaylistSongs
+                .Where(ps => ps.PlaylistId == playlistId)
+                .Include(ps => ps.Song)
+                .OrderBy(ps => ps.Position)
+                .Select(ps => ps.Song)
+                .ToListAsync();
+
+            return Ok(songs);
         }
 
         [HttpGet("albums/{albumId}/songs")]
-        public IActionResult GetAlbumSongs(int albumId)
+        public async Task<IActionResult> GetAlbumSongs(int albumId)
         {
-            // Stub implementation
-            return Ok(new List<Song>());
+            var songs = await _context.Songs
+                .Where(s => s.AlbumId == albumId)
+                .ToListAsync();
+
+            return Ok(songs);
         }
 
         [HttpGet("check-saved")]
-        public IActionResult CheckSaved([FromQuery] string userId, [FromQuery] int playlistId)
+        public async Task<IActionResult> CheckSaved([FromQuery] string userId, [FromQuery] int playlistId)
         {
-            return Ok(new { isSaved = false });
+            if (!Guid.TryParse(userId, out var guidUserId)) return Ok(new { isSaved = false });
+
+            var isSaved = await _context.SavedPlaylists
+                .AnyAsync(s => s.UserId == guidUserId && s.PlaylistId == playlistId);
+            return Ok(new { isSaved });
         }
 
         [HttpPost("toggle-save")]
-        public IActionResult ToggleSave([FromBody] object request)
+        public async Task<IActionResult> ToggleSave([FromBody] SavePlaylistRequest request)
         {
+            if (!Guid.TryParse(request.UserId, out var guidUserId)) return BadRequest();
+
+            var existing = await _context.SavedPlaylists
+                .FirstOrDefaultAsync(s => s.UserId == guidUserId && s.PlaylistId == request.PlaylistId);
+
+            if (existing != null)
+            {
+                _context.SavedPlaylists.Remove(existing);
+            }
+            else
+            {
+                _context.SavedPlaylists.Add(new SavedPlaylist
+                {
+                    UserId = guidUserId,
+                    PlaylistId = request.PlaylistId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
             return Ok(new { success = true });
         }
 
         [HttpGet("user/{userId}/saved-playlists")]
-        public IActionResult GetSavedPlaylists(string userId)
+        public async Task<IActionResult> GetSavedPlaylists(string userId)
         {
-            return Ok(new List<Playlist>());
+            if (!Guid.TryParse(userId, out var guidUserId)) return Ok(new List<Playlist>());
+
+            var playlists = await _context.SavedPlaylists
+                .Where(s => s.UserId == guidUserId)
+                .Include(s => s.Playlist)
+                .Select(s => s.Playlist)
+                .ToListAsync();
+
+            return Ok(playlists);
         }
+    }
+
+    public class SavePlaylistRequest
+    {
+        public string UserId { get; set; } = string.Empty;
+        public int PlaylistId { get; set; }
     }
 }

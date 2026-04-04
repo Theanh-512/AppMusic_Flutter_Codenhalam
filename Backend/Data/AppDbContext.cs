@@ -15,6 +15,16 @@ namespace MusicBackend.Data
         public DbSet<Album> Albums { get; set; }
         public DbSet<Podcast> Podcasts { get; set; }
         public DbSet<PodcastChannel> PodcastChannels { get; set; }
+        public DbSet<Follow> Follows { get; set; }
+        public DbSet<PlaylistSong> PlaylistSongs { get; set; }
+        public DbSet<UserPlayerState> UserPlayerStates { get; set; }
+        public DbSet<Listen> Listens { get; set; }
+        public DbSet<SavedPlaylist> SavedPlaylists { get; set; }
+        public DbSet<SongArtist> SongArtists { get; set; }
+        public DbSet<TrendingKeyword> TrendingKeywords { get; set; }
+        public DbSet<Genre> Genres { get; set; }
+        public DbSet<Mood> Moods { get; set; }
+        public DbSet<Hashtag> Hashtags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -29,6 +39,16 @@ namespace MusicBackend.Data
             modelBuilder.Entity<Album>().ToTable("albums");
             modelBuilder.Entity<Podcast>().ToTable("podcasts");
             modelBuilder.Entity<PodcastChannel>().ToTable("podcast_channels");
+            modelBuilder.Entity<Follow>().ToTable("user_followed_artists");
+            modelBuilder.Entity<PlaylistSong>().ToTable("playlist_songs");
+            modelBuilder.Entity<UserPlayerState>().ToTable("user_player_state");
+            modelBuilder.Entity<Listen>().ToTable("song_listens");
+            modelBuilder.Entity<SavedPlaylist>().ToTable("user_saved_playlists");
+            modelBuilder.Entity<SongArtist>().ToTable("song_artists").HasKey(sa => new { sa.SongId, sa.ArtistId });
+            modelBuilder.Entity<TrendingKeyword>().ToTable("trending_search_keywords");
+            modelBuilder.Entity<Genre>().ToTable("genres");
+            modelBuilder.Entity<Mood>().ToTable("moods");
+            modelBuilder.Entity<Hashtag>().ToTable("hashtags");
         }
     }
 }

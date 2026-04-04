@@ -71,5 +71,53 @@ namespace MusicBackend.Controllers
 
             return Ok(playlist);
         }
+
+        // POST: api/playlists/{id}/songs
+        [HttpPost("{id}/songs")]
+        public async Task<IActionResult> AddSongsToPlaylist(int id, [FromBody] PlaylistSongsRequest request)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+
+            foreach (var songId in request.SongIds)
+            {
+                var existing = await _context.PlaylistSongs
+                    .AnyAsync(ps => ps.PlaylistId == id && ps.SongId == songId);
+                
+                if (!existing)
+                {
+                    _context.PlaylistSongs.Add(new PlaylistSong
+                    {
+                        PlaylistId = id,
+                        SongId = songId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        // DELETE: api/playlists/{id}/songs/{songId}
+        [HttpDelete("{id}/songs/{songId}")]
+        public async Task<IActionResult> RemoveSongFromPlaylist(int id, int songId)
+        {
+            var item = await _context.PlaylistSongs
+                .FirstOrDefaultAsync(ps => ps.PlaylistId == id && ps.SongId == songId);
+
+            if (item != null)
+            {
+                _context.PlaylistSongs.Remove(item);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok();
+        }
+    }
+
+    public class PlaylistSongsRequest
+    {
+        public List<int> SongIds { get; set; } = new List<int>();
     }
 }

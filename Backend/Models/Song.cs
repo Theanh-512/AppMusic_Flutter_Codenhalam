@@ -10,6 +10,12 @@ namespace MusicBackend.Models
         [Column("id")]
         public int Id { get; set; }
 
+        [Column("album_id")]
+        public int? AlbumId { get; set; }
+
+        [ForeignKey("AlbumId")]
+        public virtual Album? Album { get; set; }
+
         [Column("title")]
         public required string Title { get; set; }
 
@@ -24,5 +30,24 @@ namespace MusicBackend.Models
         [Column("audio_url")]
         [System.Text.Json.Serialization.JsonPropertyName("audio_url")]
         public required string AudioUrl { get; set; }
+
+        [Column("lyrics_url")]
+        [System.Text.Json.Serialization.JsonPropertyName("lyrics_url")]
+        public string? LyricsUrl { get; set; }
+
+        [Column("lyrics")]
+        public string? Lyrics { get; set; }
+
+        [Column("duration_seconds")]
+        [System.Text.Json.Serialization.JsonPropertyName("duration_seconds")]
+        public int? DurationSeconds { get; set; }
+
+        [Column("total_listens")]
+        [System.Text.Json.Serialization.JsonPropertyName("total_listens")]
+        public int? TotalListens { get; set; }
+
+        [Column("like_count_cache")]
+        [System.Text.Json.Serialization.JsonPropertyName("like_count_cache")]
+        public int? LikeCountCache { get; set; }
     }
 }

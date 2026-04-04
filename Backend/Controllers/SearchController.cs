@@ -92,39 +92,72 @@ namespace MusicBackend.Controllers
         // Discovery Endpoints (Basic implementation)
 
         [HttpGet("trending-keywords")]
-        public IActionResult GetTrendingKeywords()
+        public async Task<IActionResult> GetTrendingKeywords()
         {
-            return Ok(new List<string> { "Sơn Tùng M-TP", "Chill Lofi", "Rap Việt", "Pop Ballad" });
+            var keywords = await _context.TrendingKeywords
+                .OrderByDescending(k => k.Score)
+                .Take(10)
+                .Select(k => k.Keyword)
+                .ToListAsync();
+
+            return Ok(keywords);
         }
 
         [HttpGet("discovery/hashtags")]
-        public IActionResult GetHashtags()
+        public async Task<IActionResult> GetHashtags()
         {
-            return Ok(new List<object> { 
-                new { name = "#chill", count = 120 }, 
-                new { name = "#party", count = 85 },
-                new { name = "#study", count = 200 }
-            });
+            var hashtags = await _context.Hashtags
+                .Where(h => h.IsActive)
+                .Take(20)
+                .ToListAsync();
+            return Ok(hashtags);
         }
 
         [HttpGet("discovery/genres")]
-        public IActionResult GetGenres()
+        public async Task<IActionResult> GetGenres()
         {
-            return Ok(new List<object> { 
-                new { title = "Pop", image_url = "" }, 
-                new { title = "Rock", image_url = "" },
-                new { title = "K-Pop", image_url = "" }
-            });
+            var genres = await _context.Genres
+                .Where(g => g.IsActive)
+                .Take(20)
+                .ToListAsync();
+            return Ok(genres);
         }
 
         [HttpGet("discovery/moods")]
-        public IActionResult GetMoods()
+        public async Task<IActionResult> GetMoods()
         {
-            return Ok(new List<object> { 
-                new { title = "Vui vẻ", image_url = "" }, 
-                new { title = "Buồn", image_url = "" },
-                new { title = "Thư giãn", image_url = "" }
-            });
+            var moods = await _context.Moods
+                .Where(m => m.IsActive)
+                .Take(20)
+                .ToListAsync();
+            return Ok(moods);
+        }
+
+        [HttpGet("genres")]
+        public async Task<IActionResult> SearchGenres([FromQuery] string query)
+        {
+            var genres = await _context.Genres
+                .Where(g => g.Name.ToLower().Contains(query.ToLower()) && g.IsActive)
+                .ToListAsync();
+            return Ok(genres);
+        }
+
+        [HttpGet("moods")]
+        public async Task<IActionResult> SearchMoods([FromQuery] string query)
+        {
+            var moods = await _context.Moods
+                .Where(m => m.Name.ToLower().Contains(query.ToLower()) && m.IsActive)
+                .ToListAsync();
+            return Ok(moods);
+        }
+
+        [HttpGet("hashtags")]
+        public async Task<IActionResult> SearchHashtags([FromQuery] string query)
+        {
+            var hashtags = await _context.Hashtags
+                .Where(h => h.Name.ToLower().Contains(query.ToLower()) && h.IsActive)
+                .ToListAsync();
+            return Ok(hashtags);
         }
     }
 }
