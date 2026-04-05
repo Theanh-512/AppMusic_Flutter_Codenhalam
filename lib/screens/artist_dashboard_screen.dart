@@ -263,6 +263,7 @@ class _UploadSongBottomSheetState extends ConsumerState<_UploadSongBottomSheet> 
   fp.PlatformFile? _audioFile;
   fp.PlatformFile? _coverFile;
   bool _isUploading = false;
+  double _uploadProgress = 0.0;
 
   Future<void> _pickAudio() async {
     final result = await fp.FilePicker.platform.pickFiles(
@@ -303,7 +304,17 @@ class _UploadSongBottomSheetState extends ConsumerState<_UploadSongBottomSheet> 
               : await MultipartFile.fromFile(_coverFile!.path!, filename: _coverFile!.name),
       });
 
-      await dio.post('artists/release', data: formData);
+      await dio.post(
+        'artists/release', 
+        data: formData,
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            setState(() {
+              _uploadProgress = sent / total;
+            });
+          }
+        },
+      );
       
       if (mounted) {
         Navigator.pop(context);
@@ -352,14 +363,40 @@ class _UploadSongBottomSheetState extends ConsumerState<_UploadSongBottomSheet> 
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             onTap: _pickCover,
           ),
+          if (_isUploading) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: _uploadProgress,
+                backgroundColor: Colors.white10,
+                color: AppTheme.primary,
+                minHeight: 8,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Đang tải lên: ${(_uploadProgress * 100).toStringAsFixed(0)}%',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            ),
+          ],
           const SizedBox(height: 32),
           
           ElevatedButton(
             onPressed: _isUploading ? null : _upload,
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.all(16),
+              backgroundColor: _isUploading ? Colors.grey : AppTheme.primary,
+              foregroundColor: Colors.black,
+            ),
             child: _isUploading
-                ? const CircularProgressIndicator()
-                : const Text('Phát hành ngay'),
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                  )
+                : const Text('Phát hành ngay', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

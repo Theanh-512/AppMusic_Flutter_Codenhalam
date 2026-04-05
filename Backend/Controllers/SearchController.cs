@@ -102,6 +102,7 @@ namespace MusicBackend.Controllers
         {
             var hashtags = await _context.Hashtags
                 .Where(h => h.IsActive)
+                .OrderBy(h => h.Id)
                 .Take(20)
                 .ToListAsync();
             return Ok(hashtags);
@@ -112,6 +113,7 @@ namespace MusicBackend.Controllers
         {
             var genres = await _context.Genres
                 .Where(g => g.IsActive)
+                .OrderBy(g => g.Id)
                 .Take(20)
                 .ToListAsync();
             return Ok(genres);
@@ -122,6 +124,7 @@ namespace MusicBackend.Controllers
         {
             var moods = await _context.Moods
                 .Where(m => m.IsActive)
+                .OrderBy(m => m.Id)
                 .Take(20)
                 .ToListAsync();
             return Ok(moods);
