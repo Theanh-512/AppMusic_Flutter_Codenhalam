@@ -45,9 +45,8 @@ class PlayerRepository {
   }) async {
     try {
       await _api.post('/player/listen', data: {
-        'userId': userId,
-        'songId': songId,
-        'podcastId': podcastId,
+        'user_id': userId,
+        'song_id': songId != null ? int.tryParse(songId) : null,
       });
     } catch (e) {
       // Ignored

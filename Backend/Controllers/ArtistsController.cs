@@ -148,10 +148,19 @@ namespace MusicBackend.Controllers
 
     public class ReleaseSongRequest
     {
+        [FromForm(Name = "user_id")]
         public string UserId { get; set; } = string.Empty;
+
+        [FromForm(Name = "title")]
         public string Title { get; set; } = string.Empty;
+
+        [FromForm(Name = "duration_seconds")]
         public int DurationSeconds { get; set; } = 180;
+
+        [FromForm(Name = "audio_file")]
         public IFormFile? AudioFile { get; set; }
+
+        [FromForm(Name = "cover_file")]
         public IFormFile? CoverFile { get; set; }
     }
 }

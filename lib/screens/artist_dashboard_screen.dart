@@ -293,13 +293,13 @@ class _UploadSongBottomSheetState extends ConsumerState<_UploadSongBottomSheet> 
       final dio = ref.read(apiClientInstanceProvider);
 
       final formData = FormData.fromMap({
-        'userId': user!.id,
+        'user_id': user!.id,
         'title': _titleController.text,
-        'audioFile': kIsWeb 
+        'audio_file': kIsWeb 
             ? MultipartFile.fromBytes(_audioFile!.bytes!, filename: _audioFile!.name)
             : await MultipartFile.fromFile(_audioFile!.path!, filename: _audioFile!.name),
         if (_coverFile != null)
-          'coverFile': kIsWeb 
+          'cover_file': kIsWeb 
               ? MultipartFile.fromBytes(_coverFile!.bytes!, filename: _coverFile!.name)
               : await MultipartFile.fromFile(_coverFile!.path!, filename: _coverFile!.name),
       });

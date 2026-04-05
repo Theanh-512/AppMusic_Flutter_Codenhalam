@@ -102,6 +102,7 @@ static void RunMigrations(WebApplication app)
         "ALTER TABLE songs        ALTER COLUMN duration_seconds DROP NOT NULL",
         "ALTER TABLE songs        ALTER COLUMN total_listens    DROP NOT NULL",
         "ALTER TABLE songs        ALTER COLUMN like_count_cache DROP NOT NULL",
+        "ALTER TABLE song_listens  ALTER COLUMN song_id         DROP NOT NULL",
     })
     {
         try { db.Database.ExecuteSqlRaw(ddl); } catch { /* already nullable */ }

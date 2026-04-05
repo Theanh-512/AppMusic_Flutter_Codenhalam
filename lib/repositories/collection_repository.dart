@@ -52,8 +52,8 @@ class CollectionRepository {
   Future<bool> isPlaylistSaved(String userId, int playlistId) async {
     try {
       final response = await _api.get('/collections/check-saved', queryParameters: {
-        'userId': userId,
-        'playlistId': playlistId,
+        'user_id': userId,
+        'playlist_id': playlistId,
       });
       return response.data['isSaved'] ?? false;
     } catch (e) {
@@ -65,8 +65,8 @@ class CollectionRepository {
   Future<void> toggleSavePlaylist(String userId, int playlistId, bool isAlreadySaved) async {
     try {
       await _api.post('/collections/toggle-save', data: {
-        'userId': userId,
-        'playlistId': playlistId,
+        'user_id': userId,
+        'playlist_id': playlistId,
       });
     } catch (e) {
       throw Exception('Lỗi khi lưu danh sách phát: $e');
