@@ -26,11 +26,11 @@ class PlaylistRepository {
   }) async {
     try {
       final response = await _api.post('/playlists', data: {
-        'userId': userId,
+        'user_id': userId,
         'name': name,
         'description': description,
-        'coverUrl': coverUrl,
-        'songIds': songIds,
+        'cover_url': coverUrl,
+        'song_ids': songIds,
       });
       return Playlist.fromJson(response.data);
     } catch (e) {

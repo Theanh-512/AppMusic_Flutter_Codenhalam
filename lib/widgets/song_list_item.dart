@@ -9,6 +9,8 @@ import '../providers/favorite_provider.dart';
 import '../providers/download_provider.dart';
 import '../widgets/download_status_widgets.dart';
 import '../core/app_theme.dart';
+import '../core/app_ui_utils.dart';
+import '../providers/player_provider.dart';
 
 class SongListItem extends ConsumerWidget {
   final Song song;
@@ -74,24 +76,67 @@ class SongListItem extends ConsumerWidget {
               isLikedAsync.when(
                 data: (isLiked) => IconButton(
                   icon: Icon(
-                    isLiked ? LucideIcons.heart : LucideIcons.heart,
-                    fill: isLiked ? 1 : 0,
+                    isLiked ? Icons.favorite : Icons.favorite_border,
                     color: isLiked ? AppTheme.primary : AppTheme.textSecondary,
-                    size: 20,
+                    size: 22,
                   ),
                   onPressed: () => ref.read(favoriteNotifierProvider.notifier).toggleLike(context, song.id, isLiked),
                 ),
                 loading: () => const SizedBox(width: 48, height: 48, child: Padding(padding: EdgeInsets.all(14), child: CircularProgressIndicator(strokeWidth: 2))),
                 error: (_, __) => const SizedBox.shrink(),
               ),
-              if (onMoreTap != null)
                 IconButton(
                   icon: const Icon(LucideIcons.moreVertical, size: 20),
-                  onPressed: onMoreTap,
+                  onPressed: () => _showMoreOptions(context, ref),
                 ),
             ],
           ),
       onTap: onTap,
+    );
+  }
+
+  void _showMoreOptions(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.l)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.play),
+              title: const Text('Phát tiếp theo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ref.read(audioHandlerProvider).playNext(song);
+                context.showSuccess('Sẽ phát bài này tiếp theo');
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.listMusic),
+              title: const Text('Thêm vào hàng chờ'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ref.read(audioHandlerProvider).addToQueue(song);
+                context.showSuccess('Đã thêm vào hàng chờ');
+              },
+            ),
+            const Divider(color: Colors.white10),
+            ListTile(
+              leading: const Icon(LucideIcons.plusSquare),
+              title: const Text('Thêm vào danh sách phát'),
+              onTap: () {
+                Navigator.pop(ctx);
+                // Trigger add to playlist flow
+                context.showInfo('Bạn có thể thêm vào playlist từ màn hình "Thư viện"');
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 

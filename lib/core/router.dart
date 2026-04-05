@@ -16,6 +16,7 @@ import '../screens/podcast_channel_screen.dart';
 import '../screens/create_playlist_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/artist_dashboard_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/otp_verification_screen.dart';
 import '../screens/auth/reset_password_screen.dart';

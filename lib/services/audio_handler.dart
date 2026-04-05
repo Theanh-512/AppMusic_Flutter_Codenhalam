@@ -35,13 +35,28 @@ class AudioHandler {
   
   Future<void> _playRandomFallback() async {
     if (onNeedsRandomSong != null) {
-      final randomSong = await onNeedsRandomSong!();
-      if (randomSong != null) {
-        await playNext(randomSong);
+      // Fetch multiple songs to create a better discovery flow
+      for (int i = 0; i < 5; i++) {
+        final randomSong = await onNeedsRandomSong!();
+        if (randomSong != null) {
+          await addToQueue(randomSong);
+        }
+      }
+      
+      if (_player.hasNext) {
         await _player.seekToNext();
         await _player.play();
       }
     }
+  }
+
+  Future<void> addToQueue(Song song) async {
+    // Add to end of local queue
+    _currentQueue.add(song);
+    
+    // Create and add source
+    final source = await _resolveAudioSource(song);
+    await _playlist.add(source);
   }
 
   Future<void> playSong(Song song, {List<Song>? contextQueue}) async {

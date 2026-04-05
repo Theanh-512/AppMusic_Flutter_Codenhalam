@@ -24,10 +24,16 @@ namespace MusicBackend.Controllers
         }
 
         [HttpGet("user/{userId}/subscriptions")]
-        public IActionResult GetSubscriptions(string userId)
+        public async Task<IActionResult> GetSubscriptions(string userId)
         {
-            // Simple stub for now
-            return Ok(new List<PodcastChannel>());
+            if (!Guid.TryParse(userId, out var guidUser)) return Ok(new List<PodcastChannel>());
+            
+            var channels = await _context.ChannelSubscriptions
+                .Where(s => s.UserId == guidUser)
+                .Join(_context.PodcastChannels, s => s.ChannelId, c => c.Id, (s, c) => c)
+                .ToListAsync();
+
+            return Ok(channels);
         }
 
         [HttpGet("channel/{channelId}")]
@@ -35,7 +41,7 @@ namespace MusicBackend.Controllers
         {
             if (!Guid.TryParse(channelId, out var guid)) return Ok(new List<Podcast>());
             var podcasts = await _context.Podcasts
-                .Where(p => p.ChannelId == guid)
+                .Where(p => p.ChannelId == guid && p.IsActive)
                 .ToListAsync();
             return Ok(podcasts);
         }
@@ -50,15 +56,47 @@ namespace MusicBackend.Controllers
         }
 
         [HttpGet("check-subscription")]
-        public IActionResult CheckSubscription([FromQuery] string userId, [FromQuery] string channelId)
+        public async Task<IActionResult> CheckSubscription([FromQuery] string userId, [FromQuery] string channelId)
         {
-            return Ok(new { isSubscribed = false });
+            if (!Guid.TryParse(userId, out var guidUser) || !Guid.TryParse(channelId, out var guidChannel))
+                return Ok(new { isSubscribed = false });
+
+            var exists = await _context.ChannelSubscriptions
+                .AnyAsync(s => s.UserId == guidUser && s.ChannelId == guidChannel);
+            
+            return Ok(new { isSubscribed = exists });
         }
 
         [HttpPost("toggle-subscription")]
-        public IActionResult ToggleSubscription([FromBody] object request)
+        public async Task<IActionResult> ToggleSubscription([FromBody] SubscriptionRequest request)
         {
+            if (!Guid.TryParse(request.UserId, out var guidUser) || !Guid.TryParse(request.ChannelId, out var guidChannel))
+                return BadRequest("Invalid ID format");
+
+            var sub = await _context.ChannelSubscriptions
+                .FirstOrDefaultAsync(s => s.UserId == guidUser && s.ChannelId == guidChannel);
+
+            if (sub != null)
+            {
+                _context.ChannelSubscriptions.Remove(sub);
+            }
+            else
+            {
+                _context.ChannelSubscriptions.Add(new ChannelSubscription
+                {
+                    UserId = guidUser,
+                    ChannelId = guidChannel
+                });
+            }
+
+            await _context.SaveChangesAsync();
             return Ok(new { success = true });
         }
+    }
+
+    public class SubscriptionRequest
+    {
+        public string? UserId { get; set; }
+        public string? ChannelId { get; set; }
     }
 }

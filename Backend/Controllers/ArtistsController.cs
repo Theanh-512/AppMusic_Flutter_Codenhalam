@@ -68,5 +68,67 @@ namespace MusicBackend.Controllers
 
             return Ok(albums);
         }
+        [HttpGet("me/{userId}")]
+        public async Task<IActionResult> GetMyArtistProfile(string userId)
+        {
+            if (!Guid.TryParse(userId, out var guidUserId)) return BadRequest();
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == guidUserId);
+            if (artist == null) return NotFound();
+            return Ok(artist);
+        }
+
+        [HttpPost("release")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> ReleaseSong([FromForm] string userId, [FromForm] string title, IFormFile audioFile, IFormFile? coverFile)
+        {
+            if (!Guid.TryParse(userId, out var guidUserId)) return BadRequest();
+
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == guidUserId);
+            if (artist == null) return Unauthorized(new { message = "Bạn không phải là nghệ sĩ" });
+
+            // Create directories if not exist
+            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+
+            // Save audio
+            var audioName = $"{Guid.NewGuid()}{Path.GetExtension(audioFile.FileName)}";
+            var audioPath = Path.Combine(uploadsPath, audioName);
+            using (var stream = new FileStream(audioPath, FileMode.Create))
+            {
+                await audioFile.CopyToAsync(stream);
+            }
+
+            // Save cover
+            string? coverUrl = null;
+            if (coverFile != null)
+            {
+                var coverName = $"{Guid.NewGuid()}{Path.GetExtension(coverFile.FileName)}";
+                var coverPath = Path.Combine(uploadsPath, coverName);
+                using (var stream = new FileStream(coverPath, FileMode.Create))
+                {
+                    await coverFile.CopyToAsync(stream);
+                }
+                coverUrl = $"/uploads/{coverName}";
+            }
+
+            // Create Song
+            var song = new Song
+            {
+                Title = title,
+                ArtistName = artist.Name,
+                AudioUrl = $"/uploads/{audioName}",
+                CoverUrl = coverUrl,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Songs.Add(song);
+            await _context.SaveChangesAsync();
+
+            // Link Artist to Song
+            _context.SongArtists.Add(new SongArtist { SongId = song.Id, ArtistId = artist.Id });
+            await _context.SaveChangesAsync();
+
+            return Ok(song);
+        }
     }
 }

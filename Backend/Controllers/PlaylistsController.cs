@@ -32,13 +32,40 @@ namespace MusicBackend.Controllers
             return Ok(playlists);
         }
 
-        // POST: api/playlists
         [HttpPost]
         public async Task<IActionResult> CreatePlaylist([FromBody] Playlist playlist)
         {
+            Console.WriteLine($"DEBUG: CreatePlaylist - UserId: {playlist.UserId}, Type: {playlist.PlaylistType}, IsSystem: {playlist.IsSystem}");
             playlist.CreatedAt = DateTime.UtcNow;
             _context.Playlists.Add(playlist);
-            await _context.SaveChangesAsync();
+            
+            try 
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DB ERROR: {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"INNER ERROR: {ex.InnerException.Message}");
+                throw;
+            }
+
+            // Add initial songs if any
+            if (playlist.SongIds != null && playlist.SongIds.Any())
+            {
+                var uniqueSongIds = playlist.SongIds.Distinct().ToList();
+                for (int i = 0; i < uniqueSongIds.Count; i++)
+                {
+                    _context.PlaylistSongs.Add(new PlaylistSong
+                    {
+                        PlaylistId = playlist.Id,
+                        SongId = uniqueSongIds[i],
+                        CreatedAt = DateTime.UtcNow,
+                        Position = i
+                    });
+                }
+                await _context.SaveChangesAsync();
+            }
 
             return CreatedAtAction(nameof(GetUserPlaylists), new { userId = playlist.UserId }, playlist);
         }
@@ -76,27 +103,66 @@ namespace MusicBackend.Controllers
         [HttpPost("{id}/songs")]
         public async Task<IActionResult> AddSongsToPlaylist(int id, [FromBody] PlaylistSongsRequest request)
         {
+            Console.WriteLine($"DEBUG: AddSongsToPlaylist - PlaylistId: {id}, Songs: {string.Join(",", request.SongIds)}");
+            
             var playlist = await _context.Playlists.FindAsync(id);
-            if (playlist == null) return NotFound();
-
-            foreach (var songId in request.SongIds)
+            if (playlist == null) 
             {
-                var existing = await _context.PlaylistSongs
-                    .AnyAsync(ps => ps.PlaylistId == id && ps.SongId == songId);
-                
-                if (!existing)
-                {
-                    _context.PlaylistSongs.Add(new PlaylistSong
-                    {
-                        PlaylistId = id,
-                        SongId = songId,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
+                Console.WriteLine($"DEBUG: Playlist {id} not found");
+                return NotFound(new { message = "Playlist not found" });
             }
 
-            await _context.SaveChangesAsync();
-            return Ok();
+            if (request.SongIds == null || !request.SongIds.Any())
+            {
+                return Ok();
+            }
+
+            try 
+            {
+                // De-duplicate the incoming IDs just in case
+                var songIdsToAdd = request.SongIds.Distinct().ToList();
+
+                // Find the current max position to append after it
+                var maxPosition = await _context.PlaylistSongs
+                    .Where(ps => ps.PlaylistId == id)
+                    .Select(ps => (int?)ps.Position)
+                    .MaxAsync() ?? -1;
+
+                foreach (var songId in songIdsToAdd)
+                {
+                    // Check if already in DB
+                    var existsInDb = await _context.PlaylistSongs
+                        .AnyAsync(ps => ps.PlaylistId == id && ps.SongId == songId);
+                    
+                    if (!existsInDb)
+                    {
+                        // Also check if already added to ChangeTracker in this loop
+                        var isTracked = _context.PlaylistSongs.Local
+                            .Any(ps => ps.PlaylistId == id && ps.SongId == songId);
+
+                        if (!isTracked)
+                        {
+                            maxPosition++;
+                            _context.PlaylistSongs.Add(new PlaylistSong
+                            {
+                                PlaylistId = id,
+                                SongId = songId,
+                                CreatedAt = DateTime.UtcNow,
+                                Position = maxPosition
+                            });
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in AddSongsToPlaylist: {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"INNER ERROR: {ex.InnerException.Message}");
+                return StatusCode(500, new { message = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         // DELETE: api/playlists/{id}/songs/{songId}
@@ -118,6 +184,7 @@ namespace MusicBackend.Controllers
 
     public class PlaylistSongsRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("songIds")]
         public List<int> SongIds { get; set; } = new List<int>();
     }
 }

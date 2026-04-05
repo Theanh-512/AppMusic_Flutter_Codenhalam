@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace MusicBackend.Models
 {
@@ -8,15 +9,19 @@ namespace MusicBackend.Models
     {
         [Key]
         [Column("id")]
-        public long Id { get; set; }
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
 
         [Column("keyword")]
+        [JsonPropertyName("keyword")]
         public string Keyword { get; set; } = string.Empty;
 
         [Column("score")]
-        public int Score { get; set; }
+        [JsonPropertyName("score")]
+        public int Score { get; set; } = 0;
 
         [Column("updated_at")]
+        [JsonPropertyName("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

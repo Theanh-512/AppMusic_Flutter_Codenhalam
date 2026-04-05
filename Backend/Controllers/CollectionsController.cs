@@ -112,7 +112,10 @@ namespace MusicBackend.Controllers
 
     public class SavePlaylistRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("userId")]
         public string UserId { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("playlistId")]
         public int PlaylistId { get; set; }
     }
 }

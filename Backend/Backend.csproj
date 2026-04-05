@@ -16,4 +16,8 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
   </ItemGroup>
 
+  <Target Name="KillRunningBackend" BeforeTargets="PreBuildEvent">
+    <Exec Command="powershell -Command &quot;Get-Process -Name Backend -ErrorAction SilentlyContinue | Stop-Process -Force&quot;" IgnoreExitCode="true" />
+  </Target>
+
 </Project>

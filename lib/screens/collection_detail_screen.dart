@@ -16,6 +16,7 @@ import '../core/guest_guard.dart';
 import '../providers/saved_playlists_provider.dart';
 import '../core/player_utils.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../widgets/song_picker_bottom_sheet.dart';
 
 class CollectionDetailScreen extends ConsumerStatefulWidget {
   final CollectionItem item;
@@ -113,7 +114,24 @@ class _CollectionDetailScreenState extends ConsumerState<CollectionDetailScreen>
                 _showRenameDialog();
               },
             ),
-            // Will implement Delete Playlist later
+            ListTile(
+              leading: const Icon(LucideIcons.plusCircle, color: AppTheme.textPrimary),
+              title: const Text('Thêm bài hát'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              onTap: () {
+                Navigator.pop(context);
+                _showAddSongsPicker();
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.trash2, color: Colors.redAccent),
+              title: const Text('Xoá danh sách phát', style: TextStyle(color: Colors.redAccent)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              onTap: () {
+                Navigator.pop(context);
+                _handleDeletePlaylist();
+              },
+            ),
           ],
         ),
       ),
@@ -355,6 +373,68 @@ class _CollectionDetailScreenState extends ConsumerState<CollectionDetailScreen>
       } catch (e) {
         if (context.mounted) {
           context.showError('Lỗi: $e');
+        }
+      }
+    }
+  }
+
+  Future<void> _showAddSongsPicker() async {
+    final currentSongs = await ref.read(collectionDetailProvider(widget.item).future);
+    final songIds = currentSongs.map((s) => s.id).toList();
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SongPickerBottomSheet(
+        existingSongIds: songIds,
+        onSongsSelected: (selectedIds) async {
+          try {
+            await ref.read(playlistRepositoryProvider).addSongsToPlaylist(widget.item.id, selectedIds);
+            ref.invalidate(collectionDetailProvider(widget.item));
+            if (context.mounted) {
+              context.showSuccess('Đã thêm bài hát thành công');
+            }
+          } catch (e) {
+            if (context.mounted) {
+              context.showError('Lỗi khi thêm bài hát: $e');
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleDeletePlaylist() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá danh sách phát?'),
+        content: Text('Bạn có chắc muốn xoá hoàn toàn "${_localTitle}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ', style: TextStyle(color: AppTheme.textSecondary))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
+            child: const Text('Xoá'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(playlistRepositoryProvider).deletePlaylist(widget.item.id);
+        ref.invalidate(userPlaylistsProvider);
+        if (context.mounted) {
+          Navigator.pop(context); // Go back from detail view
+          context.showSuccess('Đã xoá danh sách phát');
+        }
+      } catch (e) {
+        if (context.mounted) {
+          context.showError('Không thể xoá: $e');
         }
       }
     }

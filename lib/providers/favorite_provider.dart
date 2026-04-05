@@ -21,10 +21,16 @@ class FavoriteNotifier extends Notifier<void> {
     final user = ref.read(authStateProvider);
     if (user == null) return;
 
-    await ref.read(favoriteRepositoryProvider).toggleLike(user.id, songId, currentStatus);
-    ref.invalidate(isLikedProvider(songId));
-    ref.invalidate(likedSongsProvider);
-    ref.invalidate(likedSongsCountProvider);
+    try {
+      await ref.read(favoriteRepositoryProvider).toggleLike(user.id, songId, currentStatus);
+      ref.invalidate(isLikedProvider(songId));
+      ref.invalidate(likedSongsProvider);
+      ref.invalidate(likedSongsCountProvider);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    }
   }
 }
 

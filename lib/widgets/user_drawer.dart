@@ -63,6 +63,15 @@ class UserDrawer extends ConsumerWidget {
                 context.push('/login');
               },
             ),
+            if (profile?.isArtist == true)
+              ListTile(
+                leading: const Icon(LucideIcons.mic2, color: AppTheme.primary),
+                title: const Text('Kênh của tôi', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/artist-dashboard');
+                },
+              ),
             ListTile(
               leading: const Icon(LucideIcons.zap),
               title: const Text('Có gì mới'),

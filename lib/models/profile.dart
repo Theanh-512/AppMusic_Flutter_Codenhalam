@@ -3,12 +3,14 @@ class Profile {
   final String email;
   final String? displayName;
   final String? avatarUrl;
+  final bool isArtist;
 
   Profile({
     required this.id,
     required this.email,
     this.displayName,
     this.avatarUrl,
+    this.isArtist = false,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class Profile {
       email: json['email'] ?? '',
       displayName: json['display_name'],
       avatarUrl: json['avatar_url'],
+      isArtist: json['is_artist'] ?? false,
     );
   }
 
@@ -26,6 +29,7 @@ class Profile {
       'email': email,
       'display_name': displayName,
       'avatar_url': avatarUrl,
+      'is_artist': isArtist,
     };
   }
 }

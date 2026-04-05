@@ -189,8 +189,7 @@ class PlayerScreen extends ConsumerWidget {
                         ),
                         IconButton(
                           icon: Icon(
-                            isLiked ? LucideIcons.heart : LucideIcons.heart,
-                            fill: isLiked ? 1.0 : 0.0,
+                            isLiked ? Icons.favorite : Icons.favorite_border,
                             color: isLiked ? AppTheme.primary : Colors.white,
                             size: 28,
                           ),

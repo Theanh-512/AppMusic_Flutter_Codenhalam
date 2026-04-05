@@ -44,37 +44,63 @@ namespace MusicBackend.Controllers
         [HttpPost("toggle")]
         public async Task<IActionResult> ToggleLike([FromBody] FavoriteToggleRequest request)
         {
-            if (!Guid.TryParse(request.UserId, out var guidUserId)) return BadRequest();
-
-            var existing = await _context.Favorites
-                .FirstOrDefaultAsync(f => f.UserId == guidUserId && f.SongId == request.SongId);
-
-            var song = await _context.Songs.FindAsync(request.SongId);
-            if (song == null) return NotFound(new { message = "Song not found" });
-
-            if (existing != null)
+            try 
             {
-                _context.Favorites.Remove(existing);
-            }
-            else
-            {
-                var newFavorite = new Favorite
+                if (!Guid.TryParse(request.UserId, out var guidUserId)) 
                 {
-                    UserId = guidUserId,
-                    SongId = request.SongId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Favorites.Add(newFavorite);
-            }
+                    Console.WriteLine($"DEBUG: Invalid UserId format: {request.UserId}");
+                    return BadRequest(new { message = "Invalid User ID format" });
+                }
 
-            await _context.SaveChangesAsync();
-            return Ok(new { isLiked = existing == null });
+                // Check if already exists
+                var existing = await _context.Favorites
+                    .FirstOrDefaultAsync(f => f.UserId == guidUserId && f.SongId == request.SongId);
+
+                // Optional but good: Check if song exists
+                var songExists = await _context.Songs.AnyAsync(s => s.Id == request.SongId);
+                if (!songExists) return NotFound(new { message = "Song not found" });
+
+                if (existing != null)
+                {
+                    _context.Favorites.Remove(existing);
+                    await _context.SaveChangesAsync();
+                    return Ok(new { isLiked = false });
+                }
+                else
+                {
+                    // Check change tracker to prevent race conditions within the same context
+                    var isTracked = _context.Favorites.Local
+                        .Any(f => f.UserId == guidUserId && f.SongId == request.SongId);
+
+                    if (!isTracked)
+                    {
+                        var newFavorite = new Favorite
+                        {
+                            UserId = guidUserId,
+                            SongId = request.SongId,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Favorites.Add(newFavorite);
+                        await _context.SaveChangesAsync();
+                    }
+                    return Ok(new { isLiked = true });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in ToggleLike: {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"INNER: {ex.InnerException.Message}");
+                return StatusCode(500, new { message = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
     }
 
     public class FavoriteToggleRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("userId")]
         public string UserId { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("songId")]
         public int SongId { get; set; }
     }
 }

@@ -57,9 +57,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).signUpWithEmail(email, password, name);
+      await ref.read(authRepositoryProvider).signUpWithEmail(email, password, name, _isArtist);
       if (mounted) {
-        final profile = await ref.read(authRepositoryProvider).getProfile();
+        final profile = await ref.read(authRepositoryProvider).currentUser;
         ref.read(authStateProvider.notifier).setProfile(profile);
         context.showSuccess('Đăng ký thành công!');
         context.go('/'); 
@@ -72,6 +72,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  bool _isArtist = false;
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +155,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   prefixIcon: Icon(LucideIcons.shieldCheck, size: 20),
                 ),
               ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.1),
+              const SizedBox(height: AppSpacing.m),
+
+              CheckboxListTile(
+                title: const Text('Đăng ký tài khoản Nghệ Sĩ'),
+                subtitle: const Text('Cho phép bạn phát hành bài hát'),
+                value: _isArtist,
+                activeColor: AppTheme.primary,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _isArtist = v ?? false),
+              ).animate().fadeIn(delay: 550.ms),
+
               const SizedBox(height: AppSpacing.xl),
               
               ElevatedButton(

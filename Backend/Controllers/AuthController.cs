@@ -19,16 +19,17 @@ namespace MusicBackend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            Console.WriteLine($"DEBUG: Login attempt for {request.Email}");
             var profile = await _context.Profiles
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
-
+ 
             if (profile == null)
             {
+                Console.WriteLine($"DEBUG: Profile NOT FOUND for {request.Email}");
                 return Unauthorized(new { message = "Email hoặc mật khẩu không đúng" });
             }
-
-            // In a real app, you should hash and check passwords
-            // For this project, we'll return the profile as a "login success"
+ 
+            Console.WriteLine($"DEBUG: Login SUCCESS for {profile.Email} (ID: {profile.Id})");
             return Ok(profile);
         }
 
@@ -46,10 +47,25 @@ namespace MusicBackend.Controllers
                 Id = Guid.NewGuid(),
                 Email = request.Email,
                 DisplayName = request.DisplayName,
+                IsArtist = request.IsArtist,
                 AvatarUrl = $"https://ui-avatars.com/api/?name={request.DisplayName}&background=random"
             };
 
             _context.Profiles.Add(newProfile);
+
+            if (request.IsArtist)
+            {
+                var newArtist = new Artist
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = newProfile.Id,
+                    Name = request.DisplayName,
+                    AvatarUrl = newProfile.AvatarUrl,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Artists.Add(newArtist);
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(newProfile);
@@ -58,14 +74,25 @@ namespace MusicBackend.Controllers
 
     public class LoginRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("password")]
         public string Password { get; set; } = string.Empty;
     }
 
     public class RegisterRequest
     {
+        [System.Text.Json.Serialization.JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("password")]
         public string Password { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonPropertyName("is_artist")]
+        public bool IsArtist { get; set; } = false;
     }
 }

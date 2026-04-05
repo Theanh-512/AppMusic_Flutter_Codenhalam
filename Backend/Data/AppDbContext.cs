@@ -25,6 +25,11 @@ namespace MusicBackend.Data
         public DbSet<Genre> Genres { get; set; }
         public DbSet<Mood> Moods { get; set; }
         public DbSet<Hashtag> Hashtags { get; set; }
+        public DbSet<HomeSection> HomeSections { get; set; }
+        public DbSet<HomeSectionItem> HomeSectionItems { get; set; }
+        public DbSet<HomeSectionItemView> HomeSectionItemViews { get; set; }
+        public DbSet<HomeBanner> HomeBanners { get; set; }
+        public DbSet<ChannelSubscription> ChannelSubscriptions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +54,11 @@ namespace MusicBackend.Data
             modelBuilder.Entity<Genre>().ToTable("genres");
             modelBuilder.Entity<Mood>().ToTable("moods");
             modelBuilder.Entity<Hashtag>().ToTable("hashtags");
+            modelBuilder.Entity<HomeSection>().ToTable("home_sections");
+            modelBuilder.Entity<HomeSectionItem>().ToTable("home_section_items");
+            modelBuilder.Entity<HomeSectionItemView>().ToView("v_home_section_items_for_app").HasNoKey();
+            modelBuilder.Entity<HomeBanner>().ToTable("home_banners");
+            modelBuilder.Entity<ChannelSubscription>().ToTable("channel_subscriptions");
         }
     }
 }
