@@ -35,7 +35,8 @@ namespace MusicBackend.Models
         [System.Text.Json.Serialization.JsonPropertyName("lyrics_url")]
         public string? LyricsUrl { get; set; }
 
-        [Column("lyrics")]
+        [Column("lyrics_file")]
+        [System.Text.Json.Serialization.JsonPropertyName("lyrics")]
         public string? Lyrics { get; set; }
 
         [Column("duration_seconds")]

@@ -29,6 +29,9 @@ namespace MusicBackend.Models
         [Column("listen_count")]
         public int ListenCount { get; set; } = 0;
 
+        [Column("lyrics_url")]
+        public string? LyricsUrl { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
