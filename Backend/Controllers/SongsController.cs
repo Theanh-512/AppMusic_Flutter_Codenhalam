@@ -87,7 +87,7 @@ namespace MusicBackend.Controllers
             ");
 
             var songs = await query
-                .OrderBy(s => s.Id)
+                .OrderBy(s => s.Title) // Ensure OrderBy
                 .Take(limit)
                 .ToListAsync();
 
@@ -106,5 +106,49 @@ namespace MusicBackend.Controllers
 
             return Ok(songs);
         }
+        // DELETE: api/songs/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSong(int id, [FromQuery] Guid userId)
+        {
+            var song = await _context.Songs.FindAsync(id);
+            if (song == null) return NotFound();
+
+            // Verify ownership if possible
+            // Note: Currently songs don't have owner_id, we need to add it or check via artist
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artist == null || song.ArtistName != artist.Name)
+            {
+                return Forbid();
+            }
+
+            _context.Songs.Remove(song);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Xóa bài hát thành công" });
+        }
+
+        // PUT: api/songs/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateSong(int id, [FromBody] SongUpdateRequest request)
+        {
+            var song = await _context.Songs.FindAsync(id);
+            if (song == null) return NotFound();
+
+            // Verify ownership
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == request.UserId);
+            if (artist == null || song.ArtistName != artist.Name)
+            {
+                return Forbid();
+            }
+
+            song.Title = request.Title;
+            await _context.SaveChangesAsync();
+            return Ok(song);
+        }
+    }
+
+    public class SongUpdateRequest
+    {
+        public Guid UserId { get; set; }
+        public string Title { get; set; } = string.Empty;
     }
 }

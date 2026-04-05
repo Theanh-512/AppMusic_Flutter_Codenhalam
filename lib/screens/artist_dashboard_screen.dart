@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dio/dio.dart';
 
@@ -13,7 +13,6 @@ import '../models/artist.dart';
 import '../providers/auth_provider.dart';
 import '../providers/supabase_provider.dart';
 import '../widgets/state_widgets.dart';
-import '../widgets/song_list_item.dart';
 
 final apiClientInstanceProvider = Provider<Dio>((ref) {
   return ref.watch(apiClientProvider).instance;
@@ -45,18 +44,84 @@ class _ArtistDashboardScreenState extends ConsumerState<ArtistDashboardScreen> {
       final dio = ref.read(apiClientInstanceProvider);
       
       // 1. Get artist profile
-      final profileRes = await dio.get('/artists/me/${user.id}');
+      final profileRes = await dio.get('artists/me/${user.id}');
       _artistProfile = Artist.fromJson(profileRes.data);
       
       // 2. Get artist songs
       if (_artistProfile != null) {
-        final songsRes = await dio.get('/artists/${_artistProfile!.id}/songs');
-        _mySongs = (songsRes.data as List).map((e) => Song.fromJson(e)).toList();
+        final songsRes = await dio.get('artists/${_artistProfile!.id}/songs');
+        setState(() {
+          _mySongs = (songsRes.data as List).map((e) => Song.fromJson(e)).toList();
+        });
       }
     } catch (e) {
       print('Error loading artist data: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteSong(int songId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa bài hát?'),
+        content: const Text('Bạn có chắc chắn muốn xóa bài hát này không?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final user = ref.read(authStateProvider);
+      final dio = ref.read(apiClientInstanceProvider);
+      await dio.delete('songs/$songId', queryParameters: {'userId': user?.id});
+      context.showSuccess('Đã xóa bài hát');
+      _loadData();
+    } catch (e) {
+      context.showError('Lỗi khi xóa: $e');
+    }
+  }
+
+  Future<void> _editSong(Song song) async {
+    final controller = TextEditingController(text: song.title);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Chỉnh sửa bài hát'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Tên bài hát'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Lưu')),
+        ],
+      ),
+    );
+
+    if (newTitle == null || newTitle.isEmpty || newTitle == song.title) return;
+
+    try {
+      final user = ref.read(authStateProvider);
+      final dio = ref.read(apiClientInstanceProvider);
+      await dio.put('songs/${song.id}', data: {
+        'userId': user?.id,
+        'title': newTitle,
+      });
+      context.showSuccess('Đã cập nhật bài hát');
+      _loadData();
+    } catch (e) {
+      context.showError('Lỗi khi cập nhật: $e');
     }
   }
 
@@ -106,7 +171,7 @@ class _ArtistDashboardScreenState extends ConsumerState<ArtistDashboardScreen> {
             flexibleSpace: FlexibleSpaceBar(
               title: Text(_artistProfile!.name),
               background: _artistProfile!.coverUrl != null
-                  ? Image.network(_artistProfile!.coverUrl!, fit: BoxFit.cover)
+                  ? Image.network(context.fullImageUrl(_artistProfile!.coverUrl!), fit: BoxFit.cover)
                   : Container(color: AppTheme.primary.withOpacity(0.2)),
             ),
           ),
@@ -148,10 +213,34 @@ class _ArtistDashboardScreenState extends ConsumerState<ArtistDashboardScreen> {
           else
             SliverList(
               delegate: SliverChildBuilderDelegate(
-                (context, index) => SongListItem(
-                  song: _mySongs[index],
-                  onTap: () {}, // Artist view might be different
-                ),
+                (context, index) {
+                  final song = _mySongs[index];
+                  return ListTile(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(
+                        context.fullImageUrl(song.coverUrl),
+                        width: 48, height: 48, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(LucideIcons.music),
+                      ),
+                    ),
+                    title: Text(song.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('ID: ${song.id}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(LucideIcons.edit3, size: 18),
+                          onPressed: () => _editSong(song),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.trash2, size: 18, color: Colors.redAccent),
+                          onPressed: () => _deleteSong(song.id),
+                        ),
+                      ],
+                    ),
+                  );
+                },
                 childCount: _mySongs.length,
               ),
             ),
@@ -171,24 +260,24 @@ class _UploadSongBottomSheet extends ConsumerStatefulWidget {
 
 class _UploadSongBottomSheetState extends ConsumerState<_UploadSongBottomSheet> {
   final _titleController = TextEditingController();
-  PlatformFile? _audioFile;
-  PlatformFile? _coverFile;
+  fp.PlatformFile? _audioFile;
+  fp.PlatformFile? _coverFile;
   bool _isUploading = false;
 
   Future<void> _pickAudio() async {
-    final result = await (FilePicker as dynamic).platform.pickFiles(
-      type: FileType.audio,
+    final result = await fp.FilePicker.platform.pickFiles(
+      type: fp.FileType.audio,
       withData: kIsWeb,
     );
-    if (result != null) setState(() => _audioFile = result.files.first);
+    if (result != null) setState(() => _audioFile = result.files.first as fp.PlatformFile?);
   }
 
   Future<void> _pickCover() async {
-    final result = await (FilePicker as dynamic).platform.pickFiles(
-      type: FileType.image,
+    final result = await fp.FilePicker.platform.pickFiles(
+      type: fp.FileType.image,
       withData: kIsWeb,
     );
-    if (result != null) setState(() => _coverFile = result.files.first);
+    if (result != null) setState(() => _coverFile = result.files.first as fp.PlatformFile?);
   }
 
   Future<void> _upload() async {
@@ -214,7 +303,7 @@ class _UploadSongBottomSheetState extends ConsumerState<_UploadSongBottomSheet> 
               : await MultipartFile.fromFile(_coverFile!.path!, filename: _coverFile!.name),
       });
 
-      await dio.post('/artists/release', data: formData);
+      await dio.post('artists/release', data: formData);
       
       if (mounted) {
         Navigator.pop(context);

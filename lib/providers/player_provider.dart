@@ -88,6 +88,11 @@ final shuffleModeEnabledProvider = StreamProvider<bool>((ref) {
   return handler.player.shuffleModeEnabledStream;
 });
 
+final volumeProvider = StreamProvider<double>((ref) {
+  final handler = ref.watch(audioHandlerProvider);
+  return handler.volumeStream;
+});
+
 // ─── Supabase Sync Logic ──────────────────────────────────────────────────────
 
 final playerSyncProvider = Provider.autoDispose<void>((ref) {

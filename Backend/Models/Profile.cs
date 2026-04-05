@@ -31,6 +31,10 @@ namespace MusicBackend.Models
         [System.Text.Json.Serialization.JsonPropertyName("is_artist")]
         public bool IsArtist { get; set; } = false;
 
+        [Column("password")]
+        [System.Text.Json.Serialization.JsonPropertyName("password")]
+        public string? Password { get; set; }
+
         [Column("updated_at")]
         [System.Text.Json.Serialization.JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }

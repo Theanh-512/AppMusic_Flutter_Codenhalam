@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import '../core/app_ui_utils.dart';
 import '../models/song.dart';
 import '../models/song_download.dart';
 import 'download_service.dart';
@@ -65,6 +66,7 @@ class AudioHandler {
     
     await _updatePlaylist(_currentQueue);
     await _player.setAudioSource(_playlist, initialIndex: index >= 0 ? index : 0);
+    await _player.setVolume(1.0);
     await _player.play();
   }
   
@@ -72,6 +74,7 @@ class AudioHandler {
     _currentQueue = List.from(songs);
     await _updatePlaylist(_currentQueue);
     await _player.setAudioSource(_playlist, initialIndex: initialIndex);
+    await _player.setVolume(1.0);
     await _player.play();
   }
 
@@ -122,12 +125,12 @@ class AudioHandler {
     }
 
     return AudioSource.uri(
-      Uri.parse(finalUrl),
+      Uri.parse(AppUIUtils.getFullUrl(finalUrl)),
       tag: MediaItem(
         id: song.id.toString(),
         title: song.title,
         artist: song.artistName,
-        artUri: song.coverUrl != null ? Uri.parse(song.coverUrl!) : null,
+        artUri: song.coverUrl != null ? Uri.parse(AppUIUtils.getFullUrl(song.coverUrl!)) : null,
       ),
     );
   }
@@ -136,6 +139,7 @@ class AudioHandler {
     if (_player.playing) {
       await _player.pause();
     } else {
+      await _player.setVolume(1.0);
       await _player.play();
     }
   }
@@ -175,6 +179,12 @@ class AudioHandler {
     }
     await _player.setShuffleModeEnabled(enabled);
   }
+
+  Future<void> setVolume(double volume) async {
+    await _player.setVolume(volume.clamp(0.0, 1.0));
+  }
+
+  Stream<double> get volumeStream => _player.volumeStream;
 
   void dispose() {
     _player.dispose();

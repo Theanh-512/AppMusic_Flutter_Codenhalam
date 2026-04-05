@@ -20,16 +20,10 @@ namespace MusicBackend.Controllers
         public async Task<IActionResult> SearchSongs([FromQuery] string query)
         {
             var pattern = $"%{query}%";
+            var safePat = pattern;
             var songs = await _context.Songs
-                .FromSqlInterpolated($@"
-                    SELECT s.* 
-                    FROM songs s
-                    LEFT JOIN v_song_details v ON s.id = v.id
-                    WHERE s.title ILIKE {pattern} 
-                       OR s.artist ILIKE {pattern}
-                       OR v.genres::text ILIKE {pattern}
-                       OR v.moods::text ILIKE {pattern}
-                ")
+                .Where(s => (s.Title != null && EF.Functions.ILike(s.Title, safePat)) ||
+                            (s.ArtistName != null && EF.Functions.ILike(s.ArtistName, safePat)))
                 .OrderBy(s => s.Id)
                 .Take(20)
                 .ToListAsync();

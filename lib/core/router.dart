@@ -22,6 +22,7 @@ import '../screens/auth/otp_verification_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/category_detail_screen.dart';
 import '../screens/downloads_screen.dart';
+import '../screens/settings_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -53,6 +54,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/reset-password',
       builder: (context, state) => const ResetPasswordScreen(),
+    ),
+    GoRoute(
+      path: '/artist-dashboard',
+      builder: (context, state) => const ArtistDashboardScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
     ),
 
     // ── Full-screen routes (no shell) ──────────────────────────────────────

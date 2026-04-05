@@ -12,7 +12,7 @@ class AuthRepository {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
-      final response = await _api.post('/auth/login', data: {
+      final response = await _api.post('auth/login', data: {
         'email': email,
         'password': password,
       });
@@ -27,7 +27,7 @@ class AuthRepository {
 
   Future<void> signUpWithEmail(String email, String password, String displayName, bool isArtist) async {
     try {
-      final response = await _api.post('/auth/register', data: {
+      final response = await _api.post('auth/register', data: {
         'email': email,
         'password': password,
         'display_name': displayName,

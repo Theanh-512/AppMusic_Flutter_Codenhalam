@@ -106,4 +106,25 @@ extension AppUIExtension on BuildContext {
     _lastNavTime = now;
     push(location, extra: extra);
   }
+
+  /// Converts a relative path (e.g. /uploads/...) to a full backend URL.
+  String fullImageUrl(String? path) {
+    return AppUIUtils.getFullUrl(path);
+  }
+}
+
+class AppUIUtils {
+  static String getFullUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+    
+    // Ensure standard relative path format
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    
+    // Check if on Web or Android Emulator
+    const isWeb = bool.fromEnvironment('dart.library.js_util');
+    final baseUrl = isWeb ? 'http://127.0.0.1:5094' : 'http://10.0.2.2:5094';
+    
+    return '$baseUrl$cleanPath';
+  }
 }

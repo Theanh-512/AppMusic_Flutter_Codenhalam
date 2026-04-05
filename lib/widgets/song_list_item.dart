@@ -36,7 +36,7 @@ class SongListItem extends ConsumerWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(4),
-        child: _buildCoverImage(song.coverUrl),
+        child: _buildCoverImage(context, song.coverUrl),
       ),
 
       title: Text(
@@ -77,7 +77,7 @@ class SongListItem extends ConsumerWidget {
                 data: (isLiked) => IconButton(
                   icon: Icon(
                     isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: isLiked ? AppTheme.primary : AppTheme.textSecondary,
+                    color: isLiked ? const Color(0xFF1DB954) : AppTheme.textSecondary,
                     size: 22,
                   ),
                   onPressed: () => ref.read(favoriteNotifierProvider.notifier).toggleLike(context, song.id, isLiked),
@@ -140,10 +140,10 @@ class SongListItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildCoverImage(String? url) {
+  Widget _buildCoverImage(BuildContext context, String? url) {
     if (url == null) return _buildPlaceholder();
     
-    if (url.startsWith('/') || url.startsWith('file://')) {
+    if (url.startsWith('file://')) {
       final path = url.replaceFirst('file://', '');
       return Image.file(
         File(path),
@@ -154,8 +154,9 @@ class SongListItem extends ConsumerWidget {
       );
     }
     
+    final fullUrl = context.fullImageUrl(url);
     return CachedNetworkImage(
-      imageUrl: url,
+      imageUrl: fullUrl,
       width: 48,
       height: 48,
       fit: BoxFit.cover,

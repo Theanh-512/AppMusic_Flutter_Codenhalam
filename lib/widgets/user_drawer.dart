@@ -85,7 +85,10 @@ class UserDrawer extends ConsumerWidget {
             ListTile(
               leading: const Icon(LucideIcons.settings),
               title: const Text('Cài đặt và quyền riêng tư'),
-              onTap: () {},
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
             ),
             const Spacer(),
             const Divider(),

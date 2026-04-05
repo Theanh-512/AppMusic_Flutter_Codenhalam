@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../providers/auth_provider.dart';
+import '../core/app_ui_utils.dart'; // Added
 
 class UserAvatar extends ConsumerWidget {
   final VoidCallback? onTap;
@@ -21,12 +22,12 @@ class UserAvatar extends ConsumerWidget {
       },
       child: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: _buildAvatar(user, profile),
+        child: _buildAvatar(context, user, profile),
       ),
     );
   }
 
-  Widget _buildAvatar(dynamic user, dynamic profile) {
+  Widget _buildAvatar(BuildContext context, dynamic user, dynamic profile) {
     if (user == null) {
       // Guest mode
       return const CircleAvatar(
@@ -39,8 +40,9 @@ class UserAvatar extends ConsumerWidget {
     final displayName = profile?.displayName ?? 'User';
 
     if (avatarUrl != null && avatarUrl.isNotEmpty && !avatarUrl.startsWith('https://ui-avatars.com')) {
+      final fullUrl = context.fullImageUrl(avatarUrl);
       return CircleAvatar(
-        backgroundImage: CachedNetworkImageProvider(avatarUrl),
+        backgroundImage: CachedNetworkImageProvider(fullUrl),
       );
     }
 

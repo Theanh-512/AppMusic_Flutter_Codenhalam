@@ -20,6 +20,7 @@ import '../widgets/lyrics_preview_card.dart';
 import '../widgets/download_status_widgets.dart';
 import '../providers/download_provider.dart';
 import '../services/artist_service.dart';
+import '../core/app_ui_utils.dart'; // Added
 
 class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key});
@@ -31,6 +32,7 @@ class PlayerScreen extends ConsumerWidget {
     final positionData = ref.watch(positionDataProvider).value;
     final loopMode = ref.watch(loopModeProvider).value ?? LoopMode.off;
     final shuffleEnabled = ref.watch(shuffleModeEnabledProvider).value ?? false;
+    final volume = ref.watch(volumeProvider).value ?? 1.0;
 
     if (currentSong == null) {
       return const Scaffold(
@@ -56,7 +58,7 @@ class PlayerScreen extends ConsumerWidget {
           Positioned.fill(
             child: Opacity(
               opacity: 0.6,
-              child: _buildCoverImage(currentSong.coverUrl, isFull: true),
+              child: _buildCoverImage(context, currentSong.coverUrl, isFull: true),
             ),
           ),
 
@@ -150,7 +152,7 @@ class PlayerScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(24),
                           child: AspectRatio(
                             aspectRatio: 1,
-                            child: _buildCoverImage(currentSong.coverUrl, isFull: true),
+                            child: _buildCoverImage(context, currentSong.coverUrl, isFull: true),
                           ),
                         ),
 
@@ -190,7 +192,7 @@ class PlayerScreen extends ConsumerWidget {
                         IconButton(
                           icon: Icon(
                             isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? AppTheme.primary : Colors.white,
+                            color: isLiked ? const Color(0xFF1DB954) : Colors.white,
                             size: 28,
                           ),
                           onPressed: () => ref.read(favoriteNotifierProvider.notifier).toggleLike(context, currentSong.id, isLiked),
@@ -264,7 +266,36 @@ class PlayerScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
+
+                  // Volume Control
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.volume1, size: 16, color: Colors.white54),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              trackHeight: 2,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                              activeTrackColor: Colors.white,
+                              inactiveTrackColor: Colors.white24,
+                              thumbColor: Colors.white,
+                            ),
+                            child: Slider(
+                              value: volume,
+                              onChanged: (val) => ref.read(audioHandlerProvider).setVolume(val),
+                            ),
+                          ),
+                        ),
+                        const Icon(LucideIcons.volume2, size: 16, color: Colors.white54),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
 
                   // Lyrics Preview
                   Padding(
@@ -280,27 +311,32 @@ class PlayerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCoverImage(String? url, {bool isFull = false}) {
-    if (url == null) {
+  Widget _buildCoverImage(BuildContext context, String? url, {bool isFull = false}) {
+    if (url == null || url.isEmpty) {
       return Container(
-        color: AppTheme.surfaceHighlight,
+        color: Colors.black,
         child: Icon(LucideIcons.music, size: isFull ? 80 : 20, color: Colors.white24),
       );
     }
     
-    if (url.startsWith('/') || url.startsWith('file://')) {
+    if (url.startsWith('file://')) {
       final path = url.replaceFirst('file://', '');
       return Image.file(
         File(path),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(color: AppTheme.surfaceHighlight),
+        errorBuilder: (_, __, ___) => Container(color: Colors.black),
       );
     }
-    
+
+    // Always resolve to full URL (handles both /uploads/... and https://... links)
+    final fullUrl = context.fullImageUrl(url);
     return CachedNetworkImage(
-      imageUrl: url,
+      imageUrl: fullUrl,
       fit: BoxFit.cover,
-      errorWidget: (_, __, ___) => Container(color: AppTheme.surfaceHighlight),
+      // IMPORTANT: error color must be black/neutral — not colorful,
+      // because it gets blurred across the whole screen via BackdropFilter
+      errorWidget: (_, __, ___) => Container(color: Colors.black),
+      placeholder: (_, __) => Container(color: Colors.black),
     );
   }
 }

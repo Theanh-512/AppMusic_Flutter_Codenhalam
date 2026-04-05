@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -174,14 +173,14 @@ class MiniPlayer extends ConsumerWidget {
   }
 
   Widget _buildCoverImage(String? url) {
-    if (url == null) return _buildPlaceholder();
+    if (url == null || url.isEmpty) return _buildPlaceholder();
     
     if (url.startsWith('/') || url.startsWith('file://')) {
-      final path = url.replaceFirst('file://', '');
-      return Image.file(
-        File(path),
+      // Already resolved by AppUIUtils.getFullUrl above
+      return CachedNetworkImage(
+        imageUrl: url.startsWith('http') ? url : AppUIUtils.getFullUrl(url),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+        errorWidget: (_, __, ___) => _buildPlaceholder(),
       );
     }
     
@@ -193,7 +192,6 @@ class MiniPlayer extends ConsumerWidget {
   }
 
   Widget _buildPlaceholder() {
-
     return Container(
       color: Colors.grey.shade900,
       child: const Icon(LucideIcons.music, color: Colors.white24, size: 20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../core/app_theme.dart';
+import '../core/app_ui_utils.dart';
 
 // ─── Category Card ───────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ class SearchCategoryCard extends StatelessWidget {
                 angle: 0.5,
                 child: imageUrl != null
                     ? CachedNetworkImage(
-                        imageUrl: imageUrl!,
+                        imageUrl: AppUIUtils.getFullUrl(imageUrl!),
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
@@ -104,7 +105,7 @@ class SearchResultTile extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: imageUrl != null
             ? CachedNetworkImage(
-                imageUrl: imageUrl!,
+                imageUrl: AppUIUtils.getFullUrl(imageUrl!),
                 fit: BoxFit.cover,
                 errorWidget: (_, __, ___) => _buildIcon(),
               )
